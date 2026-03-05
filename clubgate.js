@@ -316,7 +316,14 @@
 
         var sub = document.createElement("div");
         sub.className = "gk-card-sub";
-        sub.textContent = "Kl. 19:00–22:00 · 50 kr · Ledige plasser: " + it.qty;
+        var total = 10; // standard plasser per torsdag
+var booked = Math.max(0, total - (it.qty || 0));
+sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + total + " · Ledige: " + it.qty;
+        if ((it.qty || 0) <= 0) {
+  btn.disabled = true;
+  btn.textContent = "Full booket";
+  btn.className = "gk-btn";
+}
         left.appendChild(sub);
 
         var btn = document.createElement("button");
