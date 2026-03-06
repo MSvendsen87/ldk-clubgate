@@ -15,8 +15,8 @@ var ALLOWED_GROUPS = [
 ];
 
 var MEMBER_API =
-"https://script.google.com/macros/s/AKfycbxyYoTy-hpG9n2ZUqhoNgvkTW5r6vyGdD_OLTxNpOp_dvDPNelg3IN42fL8uAPV5xTX/exec";
-
+"https://script.google.com/macros/s/AKfycbyyYoTy-hpG9n2ZUqhoNgvkTW5r6vyGdD_OLTxNpOp_dvDPNeLg3IN42fL8uAPV5xTX/exec";
+  
 var PRODUCT_ID = "1322";
 var PRODUCT_SETS = "1318";
 var EVENT_ID = "9847005";
