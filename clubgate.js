@@ -1,5 +1,5 @@
 (function () {
-  console.log("[CLUBGATE v9] LOADED");
+  console.log("[CLUBGATE v10] LOADED");
 
   /* ------------------------------------------------ */
   /* KONFIG */
@@ -26,6 +26,15 @@
   var CART_URL = "/cart/index";
   var CONTACT_EMAIL = "post@golfkongen.no";
 
+  var CLUB_TITLE = "Klubbkveld – Lyngdal Dartklubb";
+  var CLUB_TIME = "Torsdager 19:00–22:00";
+  var CLUB_PRICE = "50 kr per person";
+  var CLUB_INFO = "Velg ønsket torsdag og legg plassen i handlekurven. Kun datoer med ledige plasser vises.";
+
+  /* Logo lagt inn direkte som data-URL */
+  var CLUB_LOGO =
+    "data:image/jpeg;base64,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";
+
   /* ------------------------------------------------ */
   /* PATH CHECK */
   /* ------------------------------------------------ */
@@ -44,37 +53,323 @@
   /* ------------------------------------------------ */
 
   (function cssOnce() {
-    if (document.getElementById("gk-clubgate-css-v9")) return;
+    if (document.getElementById("gk-clubgate-css-v10")) return;
 
     var css =
-      ":root{--gk-bg:#111;--gk-card:#171717;--gk-card2:#101010;--gk-line:rgba(255,255,255,.10);--gk-text:rgba(255,255,255,.92);--gk-muted:rgba(255,255,255,.72);--gk-ac:#2bd18b;--gk-ac2:#7dffb8}" +
-      "#gk-clubgate{max-width:980px;margin:0 auto;padding:14px;color:var(--gk-text)}" +
-      ".gk-box{border:1px solid var(--gk-line);background:linear-gradient(180deg,var(--gk-card),var(--gk-card2));border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}" +
-      ".gk-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}" +
-      ".gk-h{font-weight:900;font-size:18px;margin:0 0 6px 0}" +
-      ".gk-p{margin:0;color:var(--gk-muted);line-height:1.45}" +
-      ".gk-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}" +
-      ".gk-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:var(--gk-text);text-decoration:none;font-weight:900;cursor:pointer}" +
-      ".gk-btn.ok{border-color:rgba(43,209,139,.55);background:linear-gradient(135deg, rgba(43,209,139,.18), rgba(125,255,184,.08))}" +
+      ":root{" +
+      "--gk-bg:#0d0d0d;" +
+      "--gk-card:#171717;" +
+      "--gk-card2:#101010;" +
+      "--gk-soft:#1f1f1f;" +
+      "--gk-line:rgba(255,255,255,.10);" +
+      "--gk-text:rgba(255,255,255,.94);" +
+      "--gk-muted:rgba(255,255,255,.72);" +
+      "--gk-ac:#2bd18b;" +
+      "--gk-ac2:#7dffb8;" +
+      "--gk-gold:#f0c14b;" +
+      "}" +
+
+      "#gk-clubgate{" +
+      "max-width:980px;" +
+      "margin:0 auto;" +
+      "padding:12px;" +
+      "color:var(--gk-text);" +
+      "}" +
+
+      ".gk-box{" +
+      "border:1px solid var(--gk-line);" +
+      "background:linear-gradient(180deg,var(--gk-card),var(--gk-card2));" +
+      "border-radius:22px;" +
+      "padding:14px;" +
+      "box-shadow:0 18px 50px rgba(0,0,0,.35);" +
+      "}" +
+
+      ".gk-topcard{" +
+      "position:relative;" +
+      "overflow:hidden;" +
+      "padding:16px;" +
+      "border:1px solid rgba(255,255,255,.10);" +
+      "border-radius:20px;" +
+      "background:radial-gradient(circle at top right, rgba(43,209,139,.12), transparent 42%), linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));" +
+      "}" +
+
+      ".gk-topgrid{" +
+      "display:grid;" +
+      "grid-template-columns:1fr;" +
+      "gap:14px;" +
+      "align-items:center;" +
+      "}" +
+
+      ".gk-logo-wrap{" +
+      "display:flex;" +
+      "justify-content:center;" +
+      "}" +
+
+      ".gk-logo{" +
+      "width:112px;" +
+      "height:112px;" +
+      "object-fit:contain;" +
+      "border-radius:18px;" +
+      "background:#fff;" +
+      "padding:8px;" +
+      "box-shadow:0 10px 24px rgba(0,0,0,.28);" +
+      "}" +
+
+      ".gk-toptext{" +
+      "display:flex;" +
+      "flex-direction:column;" +
+      "gap:10px;" +
+      "min-width:0;" +
+      "}" +
+
+      ".gk-h{" +
+      "font-weight:900;" +
+      "font-size:24px;" +
+      "line-height:1.1;" +
+      "margin:0;" +
+      "}" +
+
+      ".gk-p{" +
+      "margin:0;" +
+      "color:var(--gk-muted);" +
+      "line-height:1.45;" +
+      "font-size:14px;" +
+      "}" +
+
+      ".gk-meta{" +
+      "display:flex;" +
+      "flex-wrap:wrap;" +
+      "gap:8px;" +
+      "}" +
+
+      ".gk-chip{" +
+      "display:inline-flex;" +
+      "align-items:center;" +
+      "justify-content:center;" +
+      "min-height:36px;" +
+      "padding:8px 12px;" +
+      "border-radius:999px;" +
+      "border:1px solid rgba(255,255,255,.10);" +
+      "background:rgba(255,255,255,.05);" +
+      "font-size:13px;" +
+      "font-weight:800;" +
+      "color:var(--gk-text);" +
+      "}" +
+
+      ".gk-chip.price{" +
+      "border-color:rgba(240,193,75,.35);" +
+      "background:linear-gradient(135deg, rgba(240,193,75,.18), rgba(240,193,75,.06));" +
+      "color:#ffe29b;" +
+      "}" +
+
+      ".gk-top-actions{" +
+      "display:flex;" +
+      "flex-wrap:wrap;" +
+      "gap:10px;" +
+      "margin-top:2px;" +
+      "}" +
+
+      ".gk-btn{" +
+      "display:inline-flex;" +
+      "align-items:center;" +
+      "justify-content:center;" +
+      "gap:8px;" +
+      "min-height:46px;" +
+      "padding:12px 16px;" +
+      "border-radius:14px;" +
+      "border:1px solid rgba(255,255,255,.16);" +
+      "background:rgba(255,255,255,.06);" +
+      "color:var(--gk-text);" +
+      "text-decoration:none;" +
+      "font-weight:900;" +
+      "cursor:pointer;" +
+      "transition:transform .08s ease, opacity .15s ease;" +
+      "}" +
+
+      ".gk-btn.ok{" +
+      "border-color:rgba(43,209,139,.55);" +
+      "background:linear-gradient(135deg, rgba(43,209,139,.18), rgba(125,255,184,.08));" +
+      "}" +
+
+      ".gk-btn.block{" +
+      "width:100%;" +
+      "}" +
+
       ".gk-btn:active{transform:scale(.99)}" +
-      ".gk-note{margin-top:10px;font-size:12px;color:var(--gk-muted);line-height:1.35}" +
-      ".gk-row{margin-top:12px;border-top:1px solid var(--gk-line);padding-top:12px}" +
-      ".gk-sets{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px;border:1px solid var(--gk-line);border-radius:14px;background:rgba(255,255,255,.04)}" +
-      ".gk-sets strong{font-weight:900}" +
-      ".gk-sets-ctrl{display:flex;align-items:center;gap:10px}" +
-      ".gk-sets-btn{width:44px;height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--gk-text);font-weight:900;font-size:18px;cursor:pointer}" +
-      ".gk-sets-val{min-width:28px;text-align:center;font-weight:900;font-size:16px}" +
-      ".gk-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}" +
-      ".gk-card{border:1px solid var(--gk-line);border-radius:16px;padding:12px;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}" +
-      ".gk-card-left{display:flex;flex-direction:column;gap:4px}" +
-      ".gk-card-title{font-weight:900}" +
-      ".gk-card-sub{font-size:12px;color:var(--gk-muted)}" +
-      ".gk-pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--gk-muted)}" +
-      ".gk-dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--gk-ac),var(--gk-ac2));box-shadow:0 0 0 4px rgba(43,209,139,.12)}" +
-      ".gk-empty{padding:10px;color:var(--gk-muted)}";
+      ".gk-btn[disabled]{opacity:.72;cursor:default}" +
+
+      ".gk-note{" +
+      "margin-top:10px;" +
+      "font-size:12px;" +
+      "color:var(--gk-muted);" +
+      "line-height:1.4;" +
+      "}" +
+
+      ".gk-row{" +
+      "margin-top:14px;" +
+      "}" +
+
+      ".gk-section-head{" +
+      "display:flex;" +
+      "flex-direction:column;" +
+      "gap:6px;" +
+      "margin-bottom:10px;" +
+      "}" +
+
+      ".gk-section-title{" +
+      "font-size:16px;" +
+      "font-weight:900;" +
+      "margin:0;" +
+      "}" +
+
+      ".gk-sets{" +
+      "display:flex;" +
+      "align-items:center;" +
+      "justify-content:space-between;" +
+      "gap:12px;" +
+      "flex-wrap:wrap;" +
+      "padding:12px;" +
+      "border:1px solid var(--gk-line);" +
+      "border-radius:16px;" +
+      "background:rgba(255,255,255,.04);" +
+      "}" +
+
+      ".gk-sets-text{" +
+      "flex:1 1 180px;" +
+      "min-width:0;" +
+      "}" +
+
+      ".gk-sets-title{" +
+      "font-weight:900;" +
+      "font-size:15px;" +
+      "margin:0 0 4px 0;" +
+      "}" +
+
+      ".gk-sets-sub{" +
+      "font-size:12px;" +
+      "color:var(--gk-muted);" +
+      "line-height:1.35;" +
+      "margin:0;" +
+      "}" +
+
+      ".gk-sets-ctrl{" +
+      "display:flex;" +
+      "align-items:center;" +
+      "gap:10px;" +
+      "margin-left:auto;" +
+      "}" +
+
+      ".gk-sets-btn{" +
+      "width:42px;" +
+      "height:42px;" +
+      "border-radius:13px;" +
+      "border:1px solid rgba(255,255,255,.18);" +
+      "background:rgba(255,255,255,.06);" +
+      "color:var(--gk-text);" +
+      "font-weight:900;" +
+      "font-size:18px;" +
+      "cursor:pointer;" +
+      "}" +
+
+      ".gk-sets-val{" +
+      "min-width:26px;" +
+      "text-align:center;" +
+      "font-weight:900;" +
+      "font-size:18px;" +
+      "}" +
+
+      ".gk-list{" +
+      "display:flex;" +
+      "flex-direction:column;" +
+      "gap:12px;" +
+      "margin-top:12px;" +
+      "}" +
+
+      ".gk-card{" +
+      "border:1px solid var(--gk-line);" +
+      "border-radius:18px;" +
+      "padding:14px;" +
+      "background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));" +
+      "display:flex;" +
+      "flex-direction:column;" +
+      "gap:12px;" +
+      "}" +
+
+      ".gk-card-head{" +
+      "display:flex;" +
+      "flex-direction:column;" +
+      "gap:8px;" +
+      "}" +
+
+      ".gk-card-title{" +
+      "font-weight:900;" +
+      "font-size:18px;" +
+      "line-height:1.15;" +
+      "}" +
+
+      ".gk-card-meta{" +
+      "display:flex;" +
+      "flex-wrap:wrap;" +
+      "gap:8px;" +
+      "}" +
+
+      ".gk-mini{" +
+      "display:inline-flex;" +
+      "align-items:center;" +
+      "justify-content:center;" +
+      "padding:8px 10px;" +
+      "border-radius:12px;" +
+      "background:rgba(255,255,255,.05);" +
+      "border:1px solid rgba(255,255,255,.08);" +
+      "font-size:12px;" +
+      "font-weight:800;" +
+      "color:var(--gk-text);" +
+      "}" +
+
+      ".gk-mini.price{" +
+      "border-color:rgba(240,193,75,.30);" +
+      "background:linear-gradient(135deg, rgba(240,193,75,.16), rgba(240,193,75,.06));" +
+      "color:#ffe29b;" +
+      "}" +
+
+      ".gk-empty{" +
+      "padding:14px;" +
+      "border:1px solid var(--gk-line);" +
+      "border-radius:16px;" +
+      "background:rgba(255,255,255,.03);" +
+      "color:var(--gk-muted);" +
+      "}" +
+
+      "@media (min-width: 760px){" +
+      "#gk-clubgate{padding:16px}" +
+      ".gk-box{padding:18px}" +
+      ".gk-topcard{padding:20px}" +
+      ".gk-topgrid{grid-template-columns:124px 1fr}" +
+      ".gk-logo-wrap{justify-content:flex-start}" +
+      ".gk-logo{width:124px;height:124px}" +
+      ".gk-h{font-size:28px}" +
+      ".gk-card{" +
+      "flex-direction:row;" +
+      "align-items:center;" +
+      "justify-content:space-between;" +
+      "}" +
+      ".gk-card-head{" +
+      "flex:1 1 auto;" +
+      "min-width:0;" +
+      "}" +
+      ".gk-card-cta{" +
+      "flex:0 0 190px;" +
+      "display:flex;" +
+      "justify-content:flex-end;" +
+      "}" +
+      ".gk-btn.block{" +
+      "width:auto;" +
+      "min-width:170px;" +
+      "}" +
+      "}";
 
     var st = document.createElement("style");
-    st.id = "gk-clubgate-css-v9";
+    st.id = "gk-clubgate-css-v10";
     st.appendChild(document.createTextNode(css));
     document.head.appendChild(st);
   })();
@@ -99,7 +394,7 @@
   function renderLoading(msg) {
     render(
       "<div class='gk-box'>" +
-      "  <div class='gk-h'>" + escapeHtml(msg || "Laster…") + "</div>" +
+      "  <div class='gk-h' style='font-size:20px'>" + escapeHtml(msg || "Laster…") + "</div>" +
       "  <div class='gk-p'>Et øyeblikk.</div>" +
       "</div>"
     );
@@ -108,9 +403,9 @@
   function renderNeedLogin() {
     render(
       "<div class='gk-box'>" +
-      "  <div class='gk-h'>Kun for medlemmer</div>" +
+      "  <div class='gk-h' style='font-size:22px'>Kun for medlemmer</div>" +
       "  <div class='gk-p'>Du må være innlogget for å se klubbkveld.</div>" +
-      "  <div class='gk-actions'>" +
+      "  <div class='gk-top-actions'>" +
       "    <a class='gk-btn ok' href='" + LOGIN_URL + "'>Logg inn</a>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
       "  </div>" +
@@ -121,9 +416,9 @@
   function renderIdentityNotFound() {
     render(
       "<div class='gk-box'>" +
-      "  <div class='gk-h'>Fant ikke brukerinfo</div>" +
+      "  <div class='gk-h' style='font-size:22px'>Fant ikke brukerinfo</div>" +
       "  <div class='gk-p'>Du er innlogget, men vi klarte ikke å lese navn fra kundekontoen.</div>" +
-      "  <div class='gk-actions'>" +
+      "  <div class='gk-top-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
       "  </div>" +
       "</div>"
@@ -133,10 +428,10 @@
   function renderNoAccess(who) {
     render(
       "<div class='gk-box'>" +
-      "  <div class='gk-h'>Ingen tilgang</div>" +
+      "  <div class='gk-h' style='font-size:22px'>Ingen tilgang</div>" +
       "  <div class='gk-p'>Denne siden er kun tilgjengelig for aktive medlemmer eller ansatte.</div>" +
-      (who ? "  <div class='gk-note'>Innlogget som: " + escapeHtml(who) + "</div>" : "") +
-      "  <div class='gk-actions'>" +
+      (who ? "<div class='gk-note'>Innlogget som: " + escapeHtml(who) + "</div>" : "") +
+      "  <div class='gk-top-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Send e-post til " + CONTACT_EMAIL + "</a>" +
       "  </div>" +
       "</div>"
@@ -146,10 +441,10 @@
   function renderMemberApiError(msg) {
     render(
       "<div class='gk-box'>" +
-      "  <div class='gk-h'>Kunne ikke verifisere medlemskap</div>" +
+      "  <div class='gk-h' style='font-size:22px'>Kunne ikke verifisere medlemskap</div>" +
       "  <div class='gk-p'>Medlemslisten kunne ikke lastes akkurat nå. Prøv igjen om litt.</div>" +
-      (msg ? "  <div class='gk-note'>" + escapeHtml(msg) + "</div>" : "") +
-      "  <div class='gk-actions'>" +
+      (msg ? "<div class='gk-note'>" + escapeHtml(msg) + "</div>" : "") +
+      "  <div class='gk-top-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
       "  </div>" +
       "</div>"
@@ -438,34 +733,52 @@
   function renderAllowedPortal(list) {
     var html =
       "<div class='gk-box'>" +
-      "  <div class='gk-top'>" +
-      "    <div>" +
-      "      <div class='gk-h'>Klubbkveld – Lyngdal dartklubb</div>" +
-      "      <div class='gk-p'>Torsdager kl. <b>19:00–22:00</b> · <b>50 kr</b> per kveld (plasser styres av lagersaldo).</div>" +
-      "      <div class='gk-pill' style='margin-top:10px'><span class='gk-dot'></span> Tilgang verifisert</div>" +
-      "    </div>" +
-      "    <div class='gk-actions' style='margin-top:0'>" +
-      "      <a class='gk-btn ok' href='" + CART_URL + "'>Gå til handlekurv</a>" +
-      "    </div>" +
-      "  </div>" +
 
-      "  <div class='gk-sets'>" +
-      "    <div style='flex:1 1 auto;min-width:220px'>" +
-      "      <strong>Leie pilsett</strong>" +
-      "      <div class='gk-note'>Valgfritt. Legges til sammen med påmelding for valgt torsdag.</div>" +
-      "    </div>" +
-      "    <div class='gk-sets-ctrl'>" +
-      "      <button type='button' class='gk-sets-btn' id='gkSetsMinus'>−</button>" +
-      "      <div class='gk-sets-val' id='gkSetsVal'>0</div>" +
-      "      <button type='button' class='gk-sets-btn' id='gkSetsPlus'>+</button>" +
+      "  <div class='gk-topcard'>" +
+      "    <div class='gk-topgrid'>" +
+
+      "      <div class='gk-logo-wrap'>" +
+      "        <img class='gk-logo' src='" + CLUB_LOGO + "' alt='Lyngdal Dartklubb logo'>" +
+      "      </div>" +
+
+      "      <div class='gk-toptext'>" +
+      "        <div class='gk-h'>" + escapeHtml(CLUB_TITLE) + "</div>" +
+      "        <div class='gk-p'>" + escapeHtml(CLUB_TIME) + "</div>" +
+      "        <div class='gk-meta'>" +
+      "          <div class='gk-chip price'>" + escapeHtml(CLUB_PRICE) + "</div>" +
+      "          <div class='gk-chip'>Tilgang verifisert</div>" +
+      "        </div>" +
+      "        <div class='gk-p'>" + escapeHtml(CLUB_INFO) + "</div>" +
+      "        <div class='gk-top-actions'>" +
+      "          <a class='gk-btn ok' href='" + CART_URL + "'>Gå til handlekurv</a>" +
+      "        </div>" +
+      "      </div>" +
+
       "    </div>" +
       "  </div>" +
 
       "  <div class='gk-row'>" +
-      "    <div class='gk-h' style='font-size:16px;margin-bottom:0'>Velg torsdag</div>" +
-      "    <div class='gk-note'>Kun datoer med ledige plasser vises. Datoer i fortid skjules automatisk.</div>" +
+      "    <div class='gk-sets'>" +
+      "      <div class='gk-sets-text'>" +
+      "        <div class='gk-sets-title'>Leie pilsett</div>" +
+      "        <div class='gk-sets-sub'>Valgfritt tillegg. Legges til sammen med påmelding for valgt torsdag.</div>" +
+      "      </div>" +
+      "      <div class='gk-sets-ctrl'>" +
+      "        <button type='button' class='gk-sets-btn' id='gkSetsMinus' aria-label='Minus'>−</button>" +
+      "        <div class='gk-sets-val' id='gkSetsVal'>0</div>" +
+      "        <button type='button' class='gk-sets-btn' id='gkSetsPlus' aria-label='Pluss'>+</button>" +
+      "      </div>" +
+      "    </div>" +
+      "  </div>" +
+
+      "  <div class='gk-row'>" +
+      "    <div class='gk-section-head'>" +
+      "      <div class='gk-section-title'>Velg torsdag</div>" +
+      "      <div class='gk-note'>Kun datoer med ledige plasser vises. Datoer i fortid skjules automatisk.</div>" +
+      "    </div>" +
       "    <div class='gk-list' id='gkLdkList'></div>" +
       "  </div>" +
+
       "</div>";
 
     render(html);
@@ -513,38 +826,49 @@
     for (var i = 0; i < list.length; i++) {
       (function () {
         var it = list[i];
+        var total = 10;
+        var booked = Math.max(0, total - (it.qty || 0));
 
         var card = document.createElement("div");
         card.className = "gk-card";
 
-        var left = document.createElement("div");
-        left.className = "gk-card-left";
-        card.appendChild(left);
+        var head = document.createElement("div");
+        head.className = "gk-card-head";
+        card.appendChild(head);
 
-        var t = document.createElement("div");
-        t.className = "gk-card-title";
-        t.textContent = it.label;
-        left.appendChild(t);
+        var title = document.createElement("div");
+        title.className = "gk-card-title";
+        title.textContent = it.label;
+        head.appendChild(title);
 
-        var sub = document.createElement("div");
-        sub.className = "gk-card-sub";
-        var total = 10;
-        var booked = Math.max(0, total - (it.qty || 0));
-        sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + total + " · Ledige: " + it.qty;
-        left.appendChild(sub);
+        var meta = document.createElement("div");
+        meta.className = "gk-card-meta";
+        head.appendChild(meta);
+
+        var chipTime = document.createElement("div");
+        chipTime.className = "gk-mini";
+        chipTime.textContent = "Kl. 19:00–22:00";
+        meta.appendChild(chipTime);
+
+        var chipPrice = document.createElement("div");
+        chipPrice.className = "gk-mini price";
+        chipPrice.textContent = "50 kr";
+        meta.appendChild(chipPrice);
+
+        var chipBooked = document.createElement("div");
+        chipBooked.className = "gk-mini";
+        chipBooked.textContent = "Påmeldte: " + booked + "/" + total;
+        meta.appendChild(chipBooked);
+
+        var cta = document.createElement("div");
+        cta.className = "gk-card-cta";
+        card.appendChild(cta);
 
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "gk-btn ok";
+        btn.className = "gk-btn ok block";
         btn.textContent = "Meld på";
-
-        if ((it.qty || 0) <= 0) {
-          btn.disabled = true;
-          btn.textContent = "Full booket";
-          btn.className = "gk-btn";
-        }
-
-        card.appendChild(btn);
+        cta.appendChild(btn);
 
         btn.onclick = function () {
           btn.disabled = true;
@@ -653,7 +977,7 @@
             console.log("[CLUBGATE] product load error:", e);
             render(
               "<div class='gk-box'>" +
-              "  <div class='gk-h'>Kunne ikke laste torsdager</div>" +
+              "  <div class='gk-h' style='font-size:22px'>Kunne ikke laste torsdager</div>" +
               "  <div class='gk-p'>Sjekk console for detaljer.</div>" +
               "</div>"
             );
