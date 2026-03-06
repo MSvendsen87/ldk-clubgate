@@ -1,26 +1,25 @@
 (function () {
-  console.log("[CLUBGATE v5] LOADED");
+  console.log("[CLUBGATE v6] LOADED");
 
   // ---- Konfig ----
   var ALLOWED_PATH = "/sider/klubbkveld-lyngdal-dart";
 
-  // Gruppene som skal ha tilgang
-  var ALLOWED_GROUPS = [
-    "Frisbee + Dart",
-    "Dartklubben",
-    "Ansatte"
-  ];
+  // Hvilke grupper som skal ha tilgang til denne siden
+  var ALLOWED_GROUPS = ["dartklubb", "frisbeeklubb", "ansatte"];
+
+  // Google Apps Script API
+  var MEMBER_API = "https://script.google.com/macros/s/AKfycbyyYoTy-hpG9n2ZUqhoNgvkTW5r6vyGdD_OLTxNpOp_dvDPNeLg3IN42fL8uAPV5xTX/exec";
 
   // LDK Tilgang (produktet med varianter per torsdag)
   var PRODUCT_ID = "1322";
 
-  // Pilsett (samme som dart – valgfritt pr kveld)
+  // Pilsett
   var PRODUCT_SETS = "1318";
 
-  // EventId (samme som dere bruker i booking)
+  // EventId
   var EVENT_ID = "9847005";
 
-  // API (samme worker som booking)
+  // API
   var API_BASE = "https://cold-shadow-36dc.post-cd6.workers.dev/products/";
   var API_PRODUCT = API_BASE + PRODUCT_ID;
 
@@ -38,11 +37,11 @@
   var root = document.getElementById("gk-clubgate");
   if (!root) return;
 
-  // ---- Styles (GK dark) ----
+  // ---- Styles ----
   (function cssOnce() {
-    if (document.getElementById("gk-clubgate-css-v5")) return;
+    if (document.getElementById("gk-clubgate-css-v6")) return;
     var css =
-      ":root{--gk-bg:#111;--gk-card:#171717;--gk-card2:#101010;--gk-line:rgba(255,255,255,.10);--gk-soft:rgba(255,255,255,.06);--gk-text:rgba(255,255,255,.92);--gk-muted:rgba(255,255,255,.72);--gk-ac:#2bd18b;--gk-ac2:#7dffb8}" +
+      ":root{--gk-bg:#111;--gk-card:#171717;--gk-card2:#101010;--gk-line:rgba(255,255,255,.10);--gk-text:rgba(255,255,255,.92);--gk-muted:rgba(255,255,255,.72);--gk-ac:#2bd18b;--gk-ac2:#7dffb8}" +
       "#gk-clubgate{max-width:980px;margin:0 auto;padding:14px;color:var(--gk-text)}" +
       ".gk-box{border:1px solid var(--gk-line);background:linear-gradient(180deg,var(--gk-card),var(--gk-card2));border-radius:18px;padding:14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}" +
       ".gk-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}" +
@@ -66,10 +65,9 @@
       ".gk-card-sub{font-size:12px;color:var(--gk-muted)}" +
       ".gk-pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--gk-muted)}" +
       ".gk-dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,var(--gk-ac),var(--gk-ac2));box-shadow:0 0 0 4px rgba(43,209,139,.12)}" +
-      ".gk-empty{padding:10px;color:var(--gk-muted)}" +
-      ".gk-att{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.12);font-size:12px;color:var(--gk-muted)}";
+      ".gk-empty{padding:10px;color:var(--gk-muted)}";
     var st = document.createElement("style");
-    st.id = "gk-clubgate-css-v5";
+    st.id = "gk-clubgate-css-v6";
     st.appendChild(document.createTextNode(css));
     document.head.appendChild(st);
   })();
@@ -100,16 +98,12 @@
     );
   }
 
-  function renderNoAccess(foundGroups) {
-    var extra = "";
-    if (foundGroups && foundGroups.length) {
-      extra = "<div class='gk-note'>Registrert gruppe: " + escapeHtml(foundGroups.join(", ")) + "</div>";
-    }
+  function renderNoAccess(email) {
     render(
       "<div class='gk-box'>" +
       "  <div class='gk-h'>Ingen tilgang</div>" +
-      "  <div class='gk-p'>Denne siden er kun tilgjengelig for godkjente grupper.</div>" +
-      extra +
+      "  <div class='gk-p'>Denne siden er kun tilgjengelig for aktive medlemmer eller ansatte.</div>" +
+      (email ? "  <div class='gk-note'>Innlogget som: " + escapeHtml(email) + "</div>" : "") +
       "  <div class='gk-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Send e-post til " + CONTACT_EMAIL + "</a>" +
       "  </div>" +
@@ -117,12 +111,23 @@
     );
   }
 
-  function renderCannotVerify() {
+  function renderEmailNotFound() {
     render(
       "<div class='gk-box'>" +
-      "  <div class='gk-h'>Kunne ikke verifisere gruppe</div>" +
-      "  <div class='gk-p'>Innlogging er registrert, men kundegruppen kunne ikke leses automatisk.</div>" +
-      "  <div class='gk-note'>Da må vi enten hente gruppeinfo fra en annen Quickbutik-kilde eller bruke e-postbasert whitelist som reserve.</div>" +
+      "  <div class='gk-h'>Fant ikke e-post</div>" +
+      "  <div class='gk-p'>Du er innlogget, men vi klarte ikke å lese e-postadressen fra kundekontoen.</div>" +
+      "  <div class='gk-actions'>" +
+      "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
+      "  </div>" +
+      "</div>"
+    );
+  }
+
+  function renderApiError() {
+    render(
+      "<div class='gk-box'>" +
+      "  <div class='gk-h'>Kunne ikke verifisere medlemskap</div>" +
+      "  <div class='gk-p'>Medlemslisten kunne ikke lastes akkurat nå. Prøv igjen om litt.</div>" +
       "  <div class='gk-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
       "  </div>" +
@@ -166,6 +171,7 @@
 
   function addProductToCart(productId, qty, cb) {
     if (!qty || qty <= 0) { cb(true); return; }
+
     var body =
       "product_id=" + encodeURIComponent(String(productId)) +
       "&qty=" + encodeURIComponent(String(qty)) +
@@ -179,7 +185,11 @@
 
   // ---- Login ----
   function fetchSameOrigin(url) {
-    return fetch(url, { method: "GET", credentials: "same-origin", cache: "no-store" });
+    return fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store"
+    });
   }
 
   function isLoggedIn() {
@@ -187,6 +197,7 @@
       var u = String(r.url || "");
       if (u.indexOf("/customer/login") !== -1) return false;
       if (!r.ok) return false;
+
       return r.text().then(function (html) {
         var low = String(html || "").toLowerCase();
         if (low.indexOf("name=\"password\"") !== -1) return false;
@@ -195,128 +206,122 @@
     }).catch(function () { return false; });
   }
 
-  // ---- Gruppe-sjekk direkte ----
-  function uniqueClean(list) {
+  // ---- Finn e-post fra kundesider ----
+  function extractEmails(text) {
+    var matches = String(text || "").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig);
+    return matches || [];
+  }
+
+  function uniqueLower(arr) {
     var seen = {};
     var out = [];
-    for (var i = 0; i < list.length; i++) {
-      var v = String(list[i] || "").trim();
+
+    for (var i = 0; i < arr.length; i++) {
+      var v = String(arr[i] || "").trim().toLowerCase();
       if (!v) continue;
-      var k = v.toLowerCase();
-      if (seen[k]) continue;
-      seen[k] = true;
+      if (seen[v]) continue;
+      seen[v] = true;
       out.push(v);
     }
     return out;
   }
 
-  function pushIfString(arr, value) {
-    if (typeof value === "string" && value.trim()) arr.push(value.trim());
-  }
-
-  function collectGroupsFromObject(obj, out) {
-    if (!obj || typeof obj !== "object") return;
-
-    pushIfString(out, obj.group);
-    pushIfString(out, obj.group_name);
-    pushIfString(out, obj.customer_group);
-    pushIfString(out, obj.customer_group_name);
-    pushIfString(out, obj.customerGroup);
-    pushIfString(out, obj.customerGroupName);
-
-    if (Array.isArray(obj.groups)) {
-      for (var i = 0; i < obj.groups.length; i++) {
-        var g = obj.groups[i];
-        if (typeof g === "string") pushIfString(out, g);
-        else if (g && typeof g === "object") {
-          pushIfString(out, g.name);
-          pushIfString(out, g.group);
-          pushIfString(out, g.title);
-        }
-      }
-    }
-  }
-
-  function getGroupsFromGlobals() {
-    var groups = [];
-
-    try { collectGroupsFromObject(window.customer, groups); } catch (e) {}
-    try { collectGroupsFromObject(window.Customer, groups); } catch (e) {}
-    try { collectGroupsFromObject(window.__CUSTOMER__, groups); } catch (e) {}
-    try { collectGroupsFromObject(window.__QB_CUSTOMER__, groups); } catch (e) {}
-    try { collectGroupsFromObject(window.qbCustomer, groups); } catch (e) {}
-    try { collectGroupsFromObject(window.ShopCustomer, groups); } catch (e) {}
-
-    return uniqueClean(groups);
-  }
-
-  function getGroupsFromCustomerPageHtml(html) {
-    var out = [];
-    var txt = String(html || "");
-
-    // Forsøk 1: direkte tekstsøk på gruppenavn
-    for (var i = 0; i < ALLOWED_GROUPS.length; i++) {
-      var g = ALLOWED_GROUPS[i];
-      if (txt.toLowerCase().indexOf(g.toLowerCase()) !== -1) out.push(g);
-    }
-
-    // Forsøk 2: vanlige feltnavn i HTML/JS
-    var patterns = [
-      /customer_group_name["'\s:=>-]+([^"'<\n\r]+)/gi,
-      /customerGroupName["'\s:=>-]+([^"'<\n\r]+)/gi,
-      /group_name["'\s:=>-]+([^"'<\n\r]+)/gi,
-      /customer_group["'\s:=>-]+([^"'<\n\r]+)/gi
+  function getLoggedInEmail() {
+    var paths = [
+      "/customer/details",
+      "/customer/account",
+      "/customer/index",
+      "/customer/orders"
     ];
 
-    for (var p = 0; p < patterns.length; p++) {
-      var re = patterns[p];
-      var m;
-      while ((m = re.exec(txt))) {
-        pushIfString(out, m[1]);
+    var i = 0;
+
+    function next() {
+      if (i >= paths.length) return Promise.resolve("");
+
+      var path = paths[i++];
+      return fetchSameOrigin(path)
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+          var emails = uniqueLower(extractEmails(html));
+          if (emails.length) {
+            console.log("[CLUBGATE] emails found on", path, emails);
+            return emails[0];
+          }
+          return next();
+        })
+        .catch(function () {
+          return next();
+        });
+    }
+
+    return next();
+  }
+
+  // ---- Medlems-API ----
+  function fetchMemberList() {
+  var CACHE_KEY = "gk_club_members_v1";
+  var CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+
+  try {
+    var raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      var cached = JSON.parse(raw);
+      if (
+        cached &&
+        typeof cached.ts === "number" &&
+        Array.isArray(cached.data) &&
+        (Date.now() - cached.ts) < CACHE_TTL_MS
+      ) {
+        console.log("[CLUBGATE] member list from cache:", cached.data.length);
+        return Promise.resolve(cached.data);
+      }
+    }
+  } catch (e) {}
+
+  return fetch(MEMBER_API, { cache: "no-store" })
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      var list = Array.isArray(data) ? data : [];
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          ts: Date.now(),
+          data: list
+        }));
+      } catch (e) {}
+      console.log("[CLUBGATE] member list from API:", list.length);
+      return list;
+    });
+}
+
+  function userHasAccess(email, members) {
+    email = String(email || "").trim().toLowerCase();
+    if (!email || !members || !members.length) return false;
+
+    var allowedMap = {};
+    for (var i = 0; i < ALLOWED_GROUPS.length; i++) {
+      allowedMap[String(ALLOWED_GROUPS[i] || "").trim().toLowerCase()] = true;
+    }
+
+    for (var j = 0; j < members.length; j++) {
+      var m = members[j];
+      if (!m || String(m.email || "").trim().toLowerCase() !== email) continue;
+      if (!m.active) continue;
+
+      var groups = Array.isArray(m.groups) ? m.groups : [];
+      for (var g = 0; g < groups.length; g++) {
+        var groupName = String(groups[g] || "").trim().toLowerCase();
+        if (allowedMap[groupName]) return true;
       }
     }
 
-    return uniqueClean(out);
-  }
-
-  function hasAllowedGroup(groupNames) {
-    if (!groupNames || !groupNames.length) return false;
-
-    var allowed = {};
-    for (var i = 0; i < ALLOWED_GROUPS.length; i++) {
-      allowed[String(ALLOWED_GROUPS[i]).trim().toLowerCase()] = true;
-    }
-
-    for (var j = 0; j < groupNames.length; j++) {
-      var g = String(groupNames[j] || "").trim().toLowerCase();
-      if (allowed[g]) return true;
-    }
     return false;
   }
 
-  function resolveCustomerGroups() {
-    return new Promise(function (resolve) {
-      var globalGroups = getGroupsFromGlobals();
-      if (globalGroups.length) {
-        console.log("[CLUBGATE] groups from globals:", globalGroups);
-        resolve(globalGroups);
-        return;
-      }
-
-      fetchSameOrigin("/customer/index")
-        .then(function (r) { return r.text(); })
-        .then(function (html) {
-          var pageGroups = getGroupsFromCustomerPageHtml(html);
-          console.log("[CLUBGATE] groups from /customer/index:", pageGroups);
-          resolve(pageGroups);
-        })
-        .catch(function () {
-          resolve([]);
-        });
-    });
-  }
-
-  // ---- Dato-hjelpere ----
+  // ---- Dato ----
   function nowDateOnly() {
     var n = new Date();
     n.setHours(0, 0, 0, 0);
@@ -327,6 +332,7 @@
     var s = String(val || "");
     var m = s.match(/(\d{1,2})\.(\d{1,2})/);
     if (!m) return null;
+
     var dd = parseInt(m[1], 10);
     var mm = parseInt(m[2], 10);
     if (!dd || !mm) return null;
@@ -348,7 +354,7 @@
     return a.dateObj.getTime() - b.dateObj.getTime();
   }
 
-  // ---- State (pilsett) ----
+  // ---- State pilsett ----
   var setsQty = 0;
 
   function getInt(key, def) {
@@ -367,14 +373,7 @@
     } catch (e) {}
   }
 
-  // ---- Optional attendees ----
-  var ENABLE_ATTENDEES = false;
-
-  function loadAttendeesForVariant(variantId) {
-    return Promise.resolve([]);
-  }
-
-  // ---- Render allowed ----
+  // ---- Render portal ----
   function renderAllowedPortal(list) {
     var html =
       "<div class='gk-box'>" +
@@ -486,20 +485,6 @@
 
         card.appendChild(btn);
 
-        if (ENABLE_ATTENDEES) {
-          var att = document.createElement("div");
-          att.className = "gk-att";
-          att.textContent = "Laster påmeldte…";
-          left.appendChild(att);
-
-          loadAttendeesForVariant(it.variantId).then(function (names) {
-            if (!names || !names.length) att.textContent = "Ingen påmeldte vist ennå.";
-            else att.textContent = "Påmeldte: " + names.join(", ");
-          }).catch(function () {
-            att.textContent = "Kunne ikke laste påmeldte.";
-          });
-        }
-
         btn.onclick = function () {
           btn.disabled = true;
           btn.textContent = "Legger til…";
@@ -527,7 +512,6 @@
     }
   }
 
-  // ---- Load variants ----
   function buildThursdayList(product) {
     var out = [];
     var vars = product && product.variants ? product.variants : [];
@@ -571,39 +555,48 @@
       return;
     }
 
-    renderLoading("Verifiserer medlemskap…");
+    renderLoading("Leser medlemsstatus…");
 
-    resolveCustomerGroups().then(function (groupNames) {
-      console.log("[CLUBGATE] resolved groups:", groupNames);
-
-      if (!groupNames || !groupNames.length) {
-        renderCannotVerify();
+    getLoggedInEmail().then(function (email) {
+      if (!email) {
+        console.log("[CLUBGATE] no email found");
+        renderEmailNotFound();
         return;
       }
 
-      if (!hasAllowedGroup(groupNames)) {
-        renderNoAccess(groupNames);
-        return;
-      }
+      console.log("[CLUBGATE] logged in email:", email);
+      renderLoading("Verifiserer medlemskap…");
 
-      renderLoading("Laster torsdager…");
+      fetchMemberList().then(function (members) {
+        console.log("[CLUBGATE] member list loaded:", members.length);
 
-      fetch(API_PRODUCT)
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var p = data && data.product ? data.product : null;
-          var list = buildThursdayList(p);
-          renderAllowedPortal(list);
-        })
-        .catch(function (e) {
-          console.log("[CLUBGATE] load error:", e);
-          render(
-            "<div class='gk-box'>" +
-            "  <div class='gk-h'>Kunne ikke laste torsdager</div>" +
-            "  <div class='gk-p'>Sjekk console for detaljer.</div>" +
-            "</div>"
-          );
-        });
+        if (!userHasAccess(email, members)) {
+          renderNoAccess(email);
+          return;
+        }
+
+        renderLoading("Laster torsdager…");
+
+        fetch(API_PRODUCT)
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            var p = data && data.product ? data.product : null;
+            var list = buildThursdayList(p);
+            renderAllowedPortal(list);
+          })
+          .catch(function (e) {
+            console.log("[CLUBGATE] load error:", e);
+            render(
+              "<div class='gk-box'>" +
+              "  <div class='gk-h'>Kunne ikke laste torsdager</div>" +
+              "  <div class='gk-p'>Sjekk console for detaljer.</div>" +
+              "</div>"
+            );
+          });
+      }).catch(function (e) {
+        console.log("[CLUBGATE] member api error:", e);
+        renderApiError();
+      });
     });
   });
 
