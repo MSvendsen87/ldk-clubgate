@@ -1,5 +1,5 @@
 (function () {
-  console.log("[CLUBGATE v8] LOADED");
+  console.log("[CLUBGATE v9] LOADED");
 
   /* ------------------------------------------------ */
   /* KONFIG */
@@ -13,15 +13,14 @@
     "ansatte"
   ];
 
-  var MEMBER_API =
-    "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrS-llHMKQZKscYY-u1kOvrTx68Vncd65XoxT3R1r721Tbgi-i20SKcQCe27mpD0HVzIdnD6WkU4vnZgOPmYVdzC9ZbBQ_GZWxnvw1VjezqhmtfZ506F2405UqxC0al71m7UU-dQH77llA054G1iaqm3aDIGC7SK92Yeiwg9Wygbgp044-6-gJEQWqS_ea9HUjungODifTaoIYttFsIMGKbsh17ZjLGHOtP6e_NoKQ6R8cg6EKAud4nOyeVwy6003BEv6yVvtd6I1K92Tm3HCx_-XAbSQQ&lib=MXqZS5XwRR9P4TnnBWhHvV6lxVGxrH4w5";
+  var WORKER_BASE = "https://cold-shadow-36dc.post-cd6.workers.dev";
+  var MEMBER_API = WORKER_BASE + "/club-members";
 
   var PRODUCT_ID = "1322";
   var PRODUCT_SETS = "1318";
   var EVENT_ID = "9847005";
 
-  var API_BASE = "https://cold-shadow-36dc.post-cd6.workers.dev/products/";
-  var API_PRODUCT = API_BASE + PRODUCT_ID;
+  var API_PRODUCT = WORKER_BASE + "/products/" + PRODUCT_ID;
 
   var LOGIN_URL = "/customer/login";
   var CART_URL = "/cart/index";
@@ -41,11 +40,11 @@
   if (!root) return;
 
   /* ------------------------------------------------ */
-  /* STILER */
+  /* CSS */
   /* ------------------------------------------------ */
 
   (function cssOnce() {
-    if (document.getElementById("gk-clubgate-css-v8")) return;
+    if (document.getElementById("gk-clubgate-css-v9")) return;
 
     var css =
       ":root{--gk-bg:#111;--gk-card:#171717;--gk-card2:#101010;--gk-line:rgba(255,255,255,.10);--gk-text:rgba(255,255,255,.92);--gk-muted:rgba(255,255,255,.72);--gk-ac:#2bd18b;--gk-ac2:#7dffb8}" +
@@ -75,7 +74,7 @@
       ".gk-empty{padding:10px;color:var(--gk-muted)}";
 
     var st = document.createElement("style");
-    st.id = "gk-clubgate-css-v8";
+    st.id = "gk-clubgate-css-v9";
     st.appendChild(document.createTextNode(css));
     document.head.appendChild(st);
   })();
@@ -144,11 +143,12 @@
     );
   }
 
-  function renderMemberApiError() {
+  function renderMemberApiError(msg) {
     render(
       "<div class='gk-box'>" +
       "  <div class='gk-h'>Kunne ikke verifisere medlemskap</div>" +
       "  <div class='gk-p'>Medlemslisten kunne ikke lastes akkurat nå. Prøv igjen om litt.</div>" +
+      (msg ? "  <div class='gk-note'>" + escapeHtml(msg) + "</div>" : "") +
       "  <div class='gk-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
       "  </div>" +
@@ -157,7 +157,7 @@
   }
 
   /* ------------------------------------------------ */
-  /* HJELPERE */
+  /* HELPERS */
   /* ------------------------------------------------ */
 
   function normalizeText(str) {
@@ -250,12 +250,8 @@
     return next();
   }
 
-  /* ------------------------------------------------ */
-  /* JSONP MED CACHE */
-  /* ------------------------------------------------ */
-
   function fetchMemberList() {
-    var CACHE_KEY = "gk_club_members_v2";
+    var CACHE_KEY = "gk_club_members_v3";
     var CACHE_TTL_MS = 5 * 60 * 1000;
 
     try {
@@ -274,27 +270,12 @@
       }
     } catch (e) {}
 
-    return new Promise(function (resolve, reject) {
-      var cbName = "__gkClubMembersCb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-      var script = document.createElement("script");
-      var timedOut = false;
-
-      function cleanup() {
-        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-        if (script && script.parentNode) script.parentNode.removeChild(script);
-      }
-
-      var timer = setTimeout(function () {
-        timedOut = true;
-        cleanup();
-        reject(new Error("JSONP timeout"));
-      }, 15000);
-
-      window[cbName] = function (data) {
-        if (timedOut) return;
-        clearTimeout(timer);
-        cleanup();
-
+    return fetch(MEMBER_API, { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
         var list = Array.isArray(data) ? data : [];
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -302,20 +283,9 @@
             data: list
           }));
         } catch (e) {}
-
         console.log("[CLUBGATE] member list from API:", list.length);
-        resolve(list);
-      };
-
-      script.onerror = function () {
-        clearTimeout(timer);
-        cleanup();
-        reject(new Error("JSONP load error"));
-      };
-
-      script.src = MEMBER_API + "?callback=" + encodeURIComponent(cbName) + "&_=" + Date.now();
-      document.head.appendChild(script);
-    });
+        return list;
+      });
   }
 
   function userHasAccess(identity, members) {
@@ -355,7 +325,7 @@
   }
 
   /* ------------------------------------------------ */
-  /* CART HELPERS */
+  /* CART */
   /* ------------------------------------------------ */
 
   function postAddForm(bodyStr) {
@@ -404,7 +374,7 @@
   }
 
   /* ------------------------------------------------ */
-  /* DATOHJELPERE */
+  /* DATE HELPERS */
   /* ------------------------------------------------ */
 
   function nowDateOnly() {
@@ -440,7 +410,7 @@
   }
 
   /* ------------------------------------------------ */
-  /* PILSETT STATE */
+  /* SETS */
   /* ------------------------------------------------ */
 
   var setsQty = 0;
@@ -690,7 +660,7 @@
           });
       }).catch(function (e) {
         console.log("[CLUBGATE] member api error:", e);
-        renderMemberApiError();
+        renderMemberApiError(String(e && e.message ? e.message : e));
       });
     });
   });
