@@ -1,5 +1,5 @@
 (function () {
-  console.log("[CLUBGATE v10] LOADED");
+  console.log("[CLUBGATE v11] LOADED");
 
   /* ------------------------------------------------ */
   /* KONFIG */
@@ -29,10 +29,13 @@
   var CLUB_TITLE = "Klubbkveld – Lyngdal Dartklubb";
   var CLUB_TIME = "Torsdager 19:00–22:00";
   var CLUB_PRICE = "50 kr per person";
-  var CLUB_INFO = "Velg ønsket torsdag og legg plassen i handlekurven. Kun datoer med ledige plasser vises.";
+  var CLUB_INFO = "Velg ønsket torsdag og legg plassen i handlekurven. Kun datoer med ledige plasser vises. Påmelding stenger kl. 18:30 samme dag.";
 
-  /* Logo lagt inn direkte som data-URL */
   var CLUB_LOGO = "https://s3-eu-west-1.amazonaws.com/storage.quickbutik.com/stores/52923d/products/thumbnail/69ab4da425a00.jpeg";
+
+  var START_HOUR = 19;
+  var START_MINUTE = 0;
+  var CUTOFF_MINUTES_BEFORE_START = 30;
 
   /* ------------------------------------------------ */
   /* PATH CHECK */
@@ -52,7 +55,7 @@
   /* ------------------------------------------------ */
 
   (function cssOnce() {
-    if (document.getElementById("gk-clubgate-css-v10")) return;
+    if (document.getElementById("gk-clubgate-css-v11")) return;
 
     var css =
       ":root{" +
@@ -368,7 +371,7 @@
       "}";
 
     var st = document.createElement("style");
-    st.id = "gk-clubgate-css-v10";
+    st.id = "gk-clubgate-css-v11";
     st.appendChild(document.createTextNode(css));
     document.head.appendChild(st);
   })();
@@ -677,6 +680,10 @@
     return n;
   }
 
+  function nowLocal() {
+    return new Date();
+  }
+
   function parseDateFromVal(val) {
     var s = String(val || "");
     var m = s.match(/(\d{1,2})\.(\d{1,2})/);
@@ -701,6 +708,19 @@
 
   function sortByDate(a, b) {
     return a.dateObj.getTime() - b.dateObj.getTime();
+  }
+
+  function buildCutoffDate(dateObj) {
+    var cutoff = new Date(dateObj.getTime());
+    cutoff.setHours(START_HOUR, START_MINUTE, 0, 0);
+    cutoff.setMinutes(cutoff.getMinutes() - CUTOFF_MINUTES_BEFORE_START);
+    return cutoff;
+  }
+
+  function isSignupOpenForDate(dateObj) {
+    var now = nowLocal();
+    var cutoff = buildCutoffDate(dateObj);
+    return now.getTime() < cutoff.getTime();
   }
 
   /* ------------------------------------------------ */
@@ -773,7 +793,7 @@
       "  <div class='gk-row'>" +
       "    <div class='gk-section-head'>" +
       "      <div class='gk-section-title'>Velg torsdag</div>" +
-      "      <div class='gk-note'>Kun datoer med ledige plasser vises. Datoer i fortid skjules automatisk.</div>" +
+      "      <div class='gk-note'>Kun datoer med ledige plasser vises. Påmelding stenger kl. 18:30 samme dag.</div>" +
       "    </div>" +
       "    <div class='gk-list' id='gkLdkList'></div>" +
       "  </div>" +
@@ -915,6 +935,7 @@
       var d = parseDateFromVal(label);
       if (!d) continue;
       if (d.getTime() < today.getTime()) continue;
+      if (!isSignupOpenForDate(d)) continue;
 
       out.push({
         label: label,
