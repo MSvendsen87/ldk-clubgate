@@ -1,8 +1,15 @@
 (function () {
-  console.log("[CLUBGATE v4] LOADED");
+  console.log("[CLUBGATE v5] LOADED");
 
   // ---- Konfig ----
   var ALLOWED_PATH = "/sider/klubbkveld-lyngdal-dart";
+
+  // Gruppene som skal ha tilgang
+  var ALLOWED_GROUPS = [
+    "Frisbee + Dart",
+    "Dartklubben",
+    "Ansatte"
+  ];
 
   // LDK Tilgang (produktet med varianter per torsdag)
   var PRODUCT_ID = "1322";
@@ -17,17 +24,15 @@
   var API_BASE = "https://cold-shadow-36dc.post-cd6.workers.dev/products/";
   var API_PRODUCT = API_BASE + PRODUCT_ID;
 
-  // Probe-produkt for tilgang (din eksisterende løsning)
-  var GROUP_PROBE_PATH = "/utleie-og-booking/ldk-tilgang";
-  var ACCESS_MARKER_ID = "gk-ldk-access-ok";
-
   var LOGIN_URL = "/customer/login";
   var CART_URL = "/cart/index";
   var CONTACT_EMAIL = "post@golfkongen.no";
 
   // ---- Path check ----
   var path = String(location.pathname || "");
-  while (path.length && path.charAt(path.length - 1) === "/" && path !== "/") path = path.slice(0, -1);
+  while (path.length && path.charAt(path.length - 1) === "/" && path !== "/") {
+    path = path.slice(0, -1);
+  }
   if (path !== ALLOWED_PATH) return;
 
   var root = document.getElementById("gk-clubgate");
@@ -35,7 +40,7 @@
 
   // ---- Styles (GK dark) ----
   (function cssOnce() {
-    if (document.getElementById("gk-clubgate-css-v4")) return;
+    if (document.getElementById("gk-clubgate-css-v5")) return;
     var css =
       ":root{--gk-bg:#111;--gk-card:#171717;--gk-card2:#101010;--gk-line:rgba(255,255,255,.10);--gk-soft:rgba(255,255,255,.06);--gk-text:rgba(255,255,255,.92);--gk-muted:rgba(255,255,255,.72);--gk-ac:#2bd18b;--gk-ac2:#7dffb8}" +
       "#gk-clubgate{max-width:980px;margin:0 auto;padding:14px;color:var(--gk-text)}" +
@@ -64,12 +69,14 @@
       ".gk-empty{padding:10px;color:var(--gk-muted)}" +
       ".gk-att{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.12);font-size:12px;color:var(--gk-muted)}";
     var st = document.createElement("style");
-    st.id = "gk-clubgate-css-v4";
+    st.id = "gk-clubgate-css-v5";
     st.appendChild(document.createTextNode(css));
     document.head.appendChild(st);
   })();
 
-  function render(html) { root.innerHTML = html; }
+  function render(html) {
+    root.innerHTML = html;
+  }
 
   function renderLoading(msg) {
     render(
@@ -93,11 +100,16 @@
     );
   }
 
-  function renderNoAccess() {
+  function renderNoAccess(foundGroups) {
+    var extra = "";
+    if (foundGroups && foundGroups.length) {
+      extra = "<div class='gk-note'>Registrert gruppe: " + escapeHtml(foundGroups.join(", ")) + "</div>";
+    }
     render(
       "<div class='gk-box'>" +
       "  <div class='gk-h'>Ingen tilgang</div>" +
-      "  <div class='gk-p'>Denne siden er kun tilgjengelig for medlemmer i Lyngdal dartklubb.</div>" +
+      "  <div class='gk-p'>Denne siden er kun tilgjengelig for godkjente grupper.</div>" +
+      extra +
       "  <div class='gk-actions'>" +
       "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Send e-post til " + CONTACT_EMAIL + "</a>" +
       "  </div>" +
@@ -105,7 +117,29 @@
     );
   }
 
-  // ---- Cart helpers (samme mønster som booking) ----
+  function renderCannotVerify() {
+    render(
+      "<div class='gk-box'>" +
+      "  <div class='gk-h'>Kunne ikke verifisere gruppe</div>" +
+      "  <div class='gk-p'>Innlogging er registrert, men kundegruppen kunne ikke leses automatisk.</div>" +
+      "  <div class='gk-note'>Da må vi enten hente gruppeinfo fra en annen Quickbutik-kilde eller bruke e-postbasert whitelist som reserve.</div>" +
+      "  <div class='gk-actions'>" +
+      "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
+      "  </div>" +
+      "</div>"
+    );
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // ---- Cart helpers ----
   function postAddForm(bodyStr) {
     return fetch("/cart/add", {
       method: "POST",
@@ -143,7 +177,7 @@
       .catch(function () { cb(false); });
   }
 
-  // ---- Login + access checks ----
+  // ---- Login ----
   function fetchSameOrigin(url) {
     return fetch(url, { method: "GET", credentials: "same-origin", cache: "no-store" });
   }
@@ -161,18 +195,128 @@
     }).catch(function () { return false; });
   }
 
-  function hasGroupAccessViaProduct() {
-    return fetchSameOrigin(GROUP_PROBE_PATH).then(function (r) {
-      var finalUrl = String(r.url || "");
-      if (finalUrl.indexOf(GROUP_PROBE_PATH) === -1) return false;
-      if (!r.ok) return false;
-      return r.text().then(function (html) {
-        return String(html || "").indexOf(ACCESS_MARKER_ID) !== -1;
-      });
-    }).catch(function () { return false; });
+  // ---- Gruppe-sjekk direkte ----
+  function uniqueClean(list) {
+    var seen = {};
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var v = String(list[i] || "").trim();
+      if (!v) continue;
+      var k = v.toLowerCase();
+      if (seen[k]) continue;
+      seen[k] = true;
+      out.push(v);
+    }
+    return out;
   }
 
-  // ---- Data parsing (torsdag "12.03" osv) ----
+  function pushIfString(arr, value) {
+    if (typeof value === "string" && value.trim()) arr.push(value.trim());
+  }
+
+  function collectGroupsFromObject(obj, out) {
+    if (!obj || typeof obj !== "object") return;
+
+    pushIfString(out, obj.group);
+    pushIfString(out, obj.group_name);
+    pushIfString(out, obj.customer_group);
+    pushIfString(out, obj.customer_group_name);
+    pushIfString(out, obj.customerGroup);
+    pushIfString(out, obj.customerGroupName);
+
+    if (Array.isArray(obj.groups)) {
+      for (var i = 0; i < obj.groups.length; i++) {
+        var g = obj.groups[i];
+        if (typeof g === "string") pushIfString(out, g);
+        else if (g && typeof g === "object") {
+          pushIfString(out, g.name);
+          pushIfString(out, g.group);
+          pushIfString(out, g.title);
+        }
+      }
+    }
+  }
+
+  function getGroupsFromGlobals() {
+    var groups = [];
+
+    try { collectGroupsFromObject(window.customer, groups); } catch (e) {}
+    try { collectGroupsFromObject(window.Customer, groups); } catch (e) {}
+    try { collectGroupsFromObject(window.__CUSTOMER__, groups); } catch (e) {}
+    try { collectGroupsFromObject(window.__QB_CUSTOMER__, groups); } catch (e) {}
+    try { collectGroupsFromObject(window.qbCustomer, groups); } catch (e) {}
+    try { collectGroupsFromObject(window.ShopCustomer, groups); } catch (e) {}
+
+    return uniqueClean(groups);
+  }
+
+  function getGroupsFromCustomerPageHtml(html) {
+    var out = [];
+    var txt = String(html || "");
+
+    // Forsøk 1: direkte tekstsøk på gruppenavn
+    for (var i = 0; i < ALLOWED_GROUPS.length; i++) {
+      var g = ALLOWED_GROUPS[i];
+      if (txt.toLowerCase().indexOf(g.toLowerCase()) !== -1) out.push(g);
+    }
+
+    // Forsøk 2: vanlige feltnavn i HTML/JS
+    var patterns = [
+      /customer_group_name["'\s:=>-]+([^"'<\n\r]+)/gi,
+      /customerGroupName["'\s:=>-]+([^"'<\n\r]+)/gi,
+      /group_name["'\s:=>-]+([^"'<\n\r]+)/gi,
+      /customer_group["'\s:=>-]+([^"'<\n\r]+)/gi
+    ];
+
+    for (var p = 0; p < patterns.length; p++) {
+      var re = patterns[p];
+      var m;
+      while ((m = re.exec(txt))) {
+        pushIfString(out, m[1]);
+      }
+    }
+
+    return uniqueClean(out);
+  }
+
+  function hasAllowedGroup(groupNames) {
+    if (!groupNames || !groupNames.length) return false;
+
+    var allowed = {};
+    for (var i = 0; i < ALLOWED_GROUPS.length; i++) {
+      allowed[String(ALLOWED_GROUPS[i]).trim().toLowerCase()] = true;
+    }
+
+    for (var j = 0; j < groupNames.length; j++) {
+      var g = String(groupNames[j] || "").trim().toLowerCase();
+      if (allowed[g]) return true;
+    }
+    return false;
+  }
+
+  function resolveCustomerGroups() {
+    return new Promise(function (resolve) {
+      var globalGroups = getGroupsFromGlobals();
+      if (globalGroups.length) {
+        console.log("[CLUBGATE] groups from globals:", globalGroups);
+        resolve(globalGroups);
+        return;
+      }
+
+      fetchSameOrigin("/customer/index")
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+          var pageGroups = getGroupsFromCustomerPageHtml(html);
+          console.log("[CLUBGATE] groups from /customer/index:", pageGroups);
+          resolve(pageGroups);
+        })
+        .catch(function () {
+          resolve([]);
+        });
+    });
+  }
+
+  // ---- Dato-hjelpere ----
   function nowDateOnly() {
     var n = new Date();
     n.setHours(0, 0, 0, 0);
@@ -180,7 +324,6 @@
   }
 
   function parseDateFromVal(val) {
-    // "Torsdag 12.03" -> yyyy-mm-dd (antar inneværende år)
     var s = String(val || "");
     var m = s.match(/(\d{1,2})\.(\d{1,2})/);
     if (!m) return null;
@@ -207,27 +350,32 @@
 
   // ---- State (pilsett) ----
   var setsQty = 0;
+
   function getInt(key, def) {
     try {
       var v = parseInt(localStorage.getItem(key), 10);
       if (isNaN(v)) return def;
       return v;
-    } catch (e) { return def; }
+    } catch (e) {
+      return def;
+    }
   }
+
   function saveSets() {
-    try { localStorage.setItem("gk_ldk_sets_qty_v1", String(setsQty)); } catch (e) {}
+    try {
+      localStorage.setItem("gk_ldk_sets_qty_v1", String(setsQty));
+    } catch (e) {}
   }
 
-  // ---- Optional attendees (placeholder) ----
-  // Dette krever backend (se forklaring under). Foreløpig er det AV.
+  // ---- Optional attendees ----
   var ENABLE_ATTENDEES = false;
+
   function loadAttendeesForVariant(variantId) {
-    return Promise.resolve([]); // placeholder
+    return Promise.resolve([]);
   }
 
-  // ---- Render allowed (portal) ----
+  // ---- Render allowed ----
   function renderAllowedPortal(list) {
-    // Top / header
     var html =
       "<div class='gk-box'>" +
       "  <div class='gk-top'>" +
@@ -262,7 +410,6 @@
 
     render(html);
 
-    // Sets UI
     setsQty = getInt("gk_ldk_sets_qty_v1", 0);
     if (setsQty < 0) setsQty = 0;
     if (setsQty > 8) setsQty = 8;
@@ -277,18 +424,22 @@
     }
     updateSets();
 
-    if (mBtn) mBtn.onclick = function () {
-      if (setsQty <= 0) return;
-      setsQty -= 1;
-      updateSets();
-    };
-    if (pBtn) pBtn.onclick = function () {
-      if (setsQty >= 8) return;
-      setsQty += 1;
-      updateSets();
-    };
+    if (mBtn) {
+      mBtn.onclick = function () {
+        if (setsQty <= 0) return;
+        setsQty -= 1;
+        updateSets();
+      };
+    }
 
-    // List
+    if (pBtn) {
+      pBtn.onclick = function () {
+        if (setsQty >= 8) return;
+        setsQty += 1;
+        updateSets();
+      };
+    }
+
     var listEl = document.getElementById("gkLdkList");
     if (!listEl) return;
 
@@ -298,6 +449,7 @@
     }
 
     listEl.innerHTML = "";
+
     for (var i = 0; i < list.length; i++) {
       (function () {
         var it = list[i];
@@ -311,28 +463,29 @@
 
         var t = document.createElement("div");
         t.className = "gk-card-title";
-        t.textContent = it.label; // "Torsdag 12.03"
+        t.textContent = it.label;
         left.appendChild(t);
 
         var sub = document.createElement("div");
         sub.className = "gk-card-sub";
-        var total = 10; // standard plasser per torsdag
-var booked = Math.max(0, total - (it.qty || 0));
-sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + total + " · Ledige: " + it.qty;
-        if ((it.qty || 0) <= 0) {
-  btn.disabled = true;
-  btn.textContent = "Full booket";
-  btn.className = "gk-btn";
-}
+        var total = 10;
+        var booked = Math.max(0, total - (it.qty || 0));
+        sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + total + " · Ledige: " + it.qty;
         left.appendChild(sub);
 
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "gk-btn ok";
         btn.textContent = "Meld på";
+
+        if ((it.qty || 0) <= 0) {
+          btn.disabled = true;
+          btn.textContent = "Full booket";
+          btn.className = "gk-btn";
+        }
+
         card.appendChild(btn);
 
-        // optional attendees placeholder
         if (ENABLE_ATTENDEES) {
           var att = document.createElement("div");
           att.className = "gk-att";
@@ -351,7 +504,6 @@ sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + t
           btn.disabled = true;
           btn.textContent = "Legger til…";
 
-          // 1) legg til pilsett (hvis valgt)
           addProductToCart(PRODUCT_SETS, setsQty, function (okSets) {
             if (!okSets) {
               btn.disabled = false;
@@ -359,7 +511,6 @@ sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + t
               return;
             }
 
-            // 2) legg til riktig variant av LDK Tilgang
             addVariantToCart(PRODUCT_ID, it.variantId, function (okVar) {
               if (okVar) {
                 btn.textContent = "Lagt i handlekurv ✓";
@@ -384,21 +535,17 @@ sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + t
 
     for (var i = 0; i < vars.length; i++) {
       var v = vars[i];
-
       var qty = parseInt(v.qty || "0", 10);
       if (isNaN(qty) || qty <= 0) continue;
 
       var label = "";
       if (v.values && v.values.length) {
-        // name: "Dato", val: "Torsdag 12.03"
         label = String(v.values[0].val || "");
       }
       if (!label) continue;
 
       var d = parseDateFromVal(label);
       if (!d) continue;
-
-      // skjul fortid
       if (d.getTime() < today.getTime()) continue;
 
       out.push({
@@ -419,11 +566,25 @@ sub.textContent = "Kl. 19:00–22:00 · 50 kr · Påmeldte: " + booked + "/" + t
   renderLoading();
 
   isLoggedIn().then(function (okLogin) {
-    if (!okLogin) { renderNeedLogin(); return; }
+    if (!okLogin) {
+      renderNeedLogin();
+      return;
+    }
 
     renderLoading("Verifiserer medlemskap…");
-    hasGroupAccessViaProduct().then(function (okGroup) {
-      if (!okGroup) { renderNoAccess(); return; }
+
+    resolveCustomerGroups().then(function (groupNames) {
+      console.log("[CLUBGATE] resolved groups:", groupNames);
+
+      if (!groupNames || !groupNames.length) {
+        renderCannotVerify();
+        return;
+      }
+
+      if (!hasAllowedGroup(groupNames)) {
+        renderNoAccess(groupNames);
+        return;
+      }
 
       renderLoading("Laster torsdager…");
 
