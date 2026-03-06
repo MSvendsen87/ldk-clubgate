@@ -32,8 +32,7 @@
   var CLUB_INFO = "Velg ønsket torsdag og legg plassen i handlekurven. Kun datoer med ledige plasser vises.";
 
   /* Logo lagt inn direkte som data-URL */
-  var CLUB_LOGO =
-    "https://s3-eu-west-1.amazonaws.com/storage.quickbutik.com/stores/52923d/products/thumbnail/69ab4da425a00.jpeg;
+  var CLUB_LOGO = "https://s3-eu-west-1.amazonaws.com/storage.quickbutik.com/stores/52923d/products/thumbnail/69ab4da425a00.jpeg";
 
   /* ------------------------------------------------ */
   /* PATH CHECK */
