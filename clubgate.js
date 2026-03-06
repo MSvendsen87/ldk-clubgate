@@ -14,7 +14,7 @@
   ];
 
   var MEMBER_API =
-    "https://script.google.com/macros/s/AKfycbyyYoTy-hpG9n2ZUqhoNgvkTW5r6vyGdD_OLTxNpOp_dvDPNeLg3IN42fL8uAPV5xTX/exec";
+    "https://script.googleusercontent.com/macros/echo?user_content_key=AY5xjrS-llHMKQZKscYY-u1kOvrTx68Vncd65XoxT3R1r721Tbgi-i20SKcQCe27mpD0HVzIdnD6WkU4vnZgOPmYVdzC9ZbBQ_GZWxnvw1VjezqhmtfZ506F2405UqxC0al71m7UU-dQH77llA054G1iaqm3aDIGC7SK92Yeiwg9Wygbgp044-6-gJEQWqS_ea9HUjungODifTaoIYttFsIMGKbsh17ZjLGHOtP6e_NoKQ6R8cg6EKAud4nOyeVwy6003BEv6yVvtd6I1K92Tm3HCx_-XAbSQQ&lib=MXqZS5XwRR9P4TnnBWhHvV6lxVGxrH4w5";
 
   var PRODUCT_ID = "1322";
   var PRODUCT_SETS = "1318";
