@@ -19,6 +19,15 @@
   var PRODUCT_ID = "1322";
   var PRODUCT_SETS = "1318";
   var EVENT_ID = "9847005";
+/* GK BOOKING STORAGE FOR THANK YOU PAGE */
+function gkStoreBooking(payload){
+  try{
+    var KEY="gk_last_booking_payload_v1";
+    localStorage.setItem(KEY, JSON.stringify(payload||{}));
+    localStorage.setItem("gk_success_target","booking");
+  }catch(e){}
+}
+
 
   var API_PRODUCT = WORKER_BASE + "/products/" + PRODUCT_ID;
 
@@ -902,7 +911,7 @@
 
             addVariantToCart(PRODUCT_ID, it.variantId, function (okVar) {
               if (okVar) {
-                btn.textContent = "Lagt i handlekurv ✓";
+                gkStoreBooking({type:"klubb",label:"Klubbkveld – Lyngdal Dartklubb",date:it.dateIso,time:"19:00–22:00",price:50,sets:setsQty});btn.textContent = "Lagt i handlekurv ✓";
               } else {
                 btn.disabled = false;
                 btn.textContent = "Meld på (feil – prøv igjen)";
