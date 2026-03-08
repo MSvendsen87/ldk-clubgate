@@ -9,7 +9,6 @@
 
   var ALLOWED_GROUPS = [
     "dartklubb",
-    "frisbeeklubb",
     "ansatte"
   ];
 
