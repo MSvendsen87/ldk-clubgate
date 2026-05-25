@@ -1,5 +1,5 @@
 (function () {
-  console.log("[CLUBGATE v11] LOADED");
+  console.log("[CLUBGATE v12 PILSETT UNLINKED] LOADED");
 
   /* ------------------------------------------------ */
   /* KONFIG */
@@ -63,7 +63,7 @@ function gkStoreBooking(payload){
   /* ------------------------------------------------ */
 
   (function cssOnce() {
-    if (document.getElementById("gk-clubgate-css-v11")) return;
+    if (document.getElementById("gk-clubgate-css-v12")) return;
 
     var css =
       ":root{" +
@@ -288,6 +288,11 @@ function gkStoreBooking(payload){
       "font-size:18px;" +
       "}" +
 
+      ".gk-sets-add{" +
+      "flex:1 1 100%;" +
+      "margin-top:2px;" +
+      "}" +
+
       ".gk-list{" +
       "display:flex;" +
       "flex-direction:column;" +
@@ -379,7 +384,7 @@ function gkStoreBooking(payload){
       "}";
 
     var st = document.createElement("style");
-    st.id = "gk-clubgate-css-v11";
+    st.id = "gk-clubgate-css-v12";
     st.appendChild(document.createTextNode(css));
     document.head.appendChild(st);
   })();
@@ -669,7 +674,6 @@ function gkStoreBooking(payload){
     var body =
       "product_id=" + encodeURIComponent(String(productId)) +
       "&qty=" + encodeURIComponent(String(qty)) +
-      "&quantity=" + encodeURIComponent(String(qty)) +
       "&eventId=" + encodeURIComponent(String(EVENT_ID)) +
       "&page=product";
 
@@ -788,13 +792,14 @@ function gkStoreBooking(payload){
       "    <div class='gk-sets'>" +
       "      <div class='gk-sets-text'>" +
       "        <div class='gk-sets-title'>Leie pilsett</div>" +
-      "        <div class='gk-sets-sub'>Valgfritt tillegg. Legges til sammen med påmelding for valgt torsdag.</div>" +
+      "        <div class='gk-sets-sub'>Valgfritt tillegg. Pilsett legges i handlekurven med egen knapp og er ikke knyttet til klubbkveld-påmelding.</div>" +
       "      </div>" +
       "      <div class='gk-sets-ctrl'>" +
       "        <button type='button' class='gk-sets-btn' id='gkSetsMinus' aria-label='Minus'>−</button>" +
       "        <div class='gk-sets-val' id='gkSetsVal'>0</div>" +
       "        <button type='button' class='gk-sets-btn' id='gkSetsPlus' aria-label='Pluss'>+</button>" +
       "      </div>" +
+      "      <button type='button' class='gk-btn ok gk-sets-add' id='gkSetsAdd'>Velg antall pilsett</button>" +
       "    </div>" +
       "  </div>" +
 
@@ -817,9 +822,21 @@ function gkStoreBooking(payload){
     var valEl = document.getElementById("gkSetsVal");
     var mBtn = document.getElementById("gkSetsMinus");
     var pBtn = document.getElementById("gkSetsPlus");
+    var addSetsBtn = document.getElementById("gkSetsAdd");
 
     function updateSets() {
       if (valEl) valEl.textContent = String(setsQty);
+
+      if (addSetsBtn) {
+        if (setsQty > 0) {
+          addSetsBtn.disabled = false;
+          addSetsBtn.textContent = "Legg " + setsQty + " pilsett i handlekurv";
+        } else {
+          addSetsBtn.disabled = true;
+          addSetsBtn.textContent = "Velg antall pilsett";
+        }
+      }
+
       saveSets();
     }
     updateSets();
@@ -837,6 +854,25 @@ function gkStoreBooking(payload){
         if (setsQty >= 8) return;
         setsQty += 1;
         updateSets();
+      };
+    }
+
+    if (addSetsBtn) {
+      addSetsBtn.onclick = function () {
+        if (!setsQty || setsQty <= 0) return;
+
+        addSetsBtn.disabled = true;
+        addSetsBtn.textContent = "Legger til…";
+
+        addProductToCart(PRODUCT_SETS, setsQty, function (okSets) {
+          if (okSets) {
+            addSetsBtn.textContent = setsQty + " pilsett lagt i handlekurv ✓";
+            setTimeout(updateSets, 1200);
+          } else {
+            addSetsBtn.disabled = false;
+            addSetsBtn.textContent = "Kunne ikke legge til – prøv igjen";
+          }
+        });
       };
     }
 
@@ -901,21 +937,21 @@ function gkStoreBooking(payload){
           btn.disabled = true;
           btn.textContent = "Legger til…";
 
-          addProductToCart(PRODUCT_SETS, setsQty, function (okSets) {
-            if (!okSets) {
+          addVariantToCart(PRODUCT_ID, it.variantId, function (okVar) {
+            if (okVar) {
+              gkStoreBooking({
+                type: "klubb",
+                label: "Klubbkveld – Lyngdal Dartklubb",
+                date: it.dateIso,
+                time: "19:00–22:00",
+                price: 50,
+                sets: 0
+              });
+              btn.textContent = "Lagt i handlekurv ✓";
+            } else {
               btn.disabled = false;
               btn.textContent = "Meld på (feil – prøv igjen)";
-              return;
             }
-
-            addVariantToCart(PRODUCT_ID, it.variantId, function (okVar) {
-              if (okVar) {
-                gkStoreBooking({type:"klubb",label:"Klubbkveld – Lyngdal Dartklubb",date:it.dateIso,time:"19:00–22:00",price:50,sets:setsQty});btn.textContent = "Lagt i handlekurv ✓";
-              } else {
-                btn.disabled = false;
-                btn.textContent = "Meld på (feil – prøv igjen)";
-              }
-            });
           });
         };
 
