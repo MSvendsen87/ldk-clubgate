@@ -1,67 +1,8 @@
-(function () {
-  console.log("[CLUBGATE v12 PILSETT UNLINKED] LOADED");
-
-  /* ------------------------------------------------ */
-  /* KONFIG */
-  /* ------------------------------------------------ */
-
-  var ALLOWED_PATH = "/sider/klubbkveld-lyngdal-dart";
-
-  var ALLOWED_GROUPS = [
-    "dartklubb",
-    "ansatte"
-  ];
-
-  var WORKER_BASE = "https://cold-shadow-36dc.post-cd6.workers.dev";
-  var MEMBER_API = WORKER_BASE + "/club-members";
-
-  var PRODUCT_ID = "1322";
-  var PRODUCT_SETS = "1318";
-  var EVENT_ID = "9847005";
-/* GK BOOKING STORAGE FOR THANK YOU PAGE */
-function gkStoreBooking(payload){
-  try{
-    var KEY="gk_last_booking_payload_v1";
-    localStorage.setItem(KEY, JSON.stringify(payload||{}));
-    localStorage.setItem("gk_success_target","booking");
-  }catch(e){}
-}
-
-
-  var API_PRODUCT = WORKER_BASE + "/products/" + PRODUCT_ID;
-
-  var LOGIN_URL = "/customer/login";
-  var CART_URL = "/cart/index";
-  var CONTACT_EMAIL = "post@golfkongen.no";
-
-  var CLUB_TITLE = "Klubbkveld – Lyngdal Dartklubb";
-  var CLUB_TIME = "Torsdager 19:00–22:00";
-  var CLUB_PRICE = "50 kr per person";
-  var CLUB_INFO = "Velg ønsket torsdag og legg plassen i handlekurven. Kun datoer med ledige plasser vises. Påmelding stenger kl. 18:30 samme dag.";
-
-  var CLUB_LOGO = "https://s3-eu-west-1.amazonaws.com/storage.quickbutik.com/stores/52923d/products/thumbnail/69ab4da425a00.jpeg";
-
-  var START_HOUR = 19;
-  var START_MINUTE = 0;
-  var CUTOFF_MINUTES_BEFORE_START = 30;
-
-  /* ------------------------------------------------ */
-  /* PATH CHECK */
-  /* ------------------------------------------------ */
-
-  var path = String(location.pathname || "");
-  while (path.length && path.charAt(path.length - 1) === "/" && path !== "/") {
-    path = path.slice(0, -1);
-  }
-  if (path !== ALLOWED_PATH) return;
-
-  var root = document.getElementById("gk-clubgate");
-  if (!root) return;
-
-  /* ------------------------------------------------ */
-  /* CSS */
-  /* ------------------------------------------------ */
-
+(async function(){
+ "use strict";
+ const path=String(location.pathname||"").replace(/\/$/,"");
+ if(path!=="/sider/klubbkveld-lyngdal-dart")return;
+ const root=document.getElementById("gk-clubgate");if(!root)return;
   (function cssOnce() {
     if (document.getElementById("gk-clubgate-css-v12")) return;
 
@@ -389,668 +330,79 @@ function gkStoreBooking(payload){
     document.head.appendChild(st);
   })();
 
-  /* ------------------------------------------------ */
-  /* UI */
-  /* ------------------------------------------------ */
 
-  function render(html) {
-    root.innerHTML = html;
-  }
-
-  function escapeHtml(str) {
-    return String(str || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function renderLoading(msg) {
-    render(
-      "<div class='gk-box'>" +
-      "  <div class='gk-h' style='font-size:20px'>" + escapeHtml(msg || "Laster…") + "</div>" +
-      "  <div class='gk-p'>Et øyeblikk.</div>" +
-      "</div>"
-    );
-  }
-
-  function renderNeedLogin() {
-    render(
-      "<div class='gk-box'>" +
-      "  <div class='gk-h' style='font-size:22px'>Kun for medlemmer</div>" +
-      "  <div class='gk-p'>Du må være innlogget for å se klubbkveld.</div>" +
-      "  <div class='gk-top-actions'>" +
-      "    <a class='gk-btn ok' href='" + LOGIN_URL + "'>Logg inn</a>" +
-      "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
-      "  </div>" +
-      "</div>"
-    );
-  }
-
-  function renderIdentityNotFound() {
-    render(
-      "<div class='gk-box'>" +
-      "  <div class='gk-h' style='font-size:22px'>Fant ikke brukerinfo</div>" +
-      "  <div class='gk-p'>Du er innlogget, men vi klarte ikke å lese navn fra kundekontoen.</div>" +
-      "  <div class='gk-top-actions'>" +
-      "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
-      "  </div>" +
-      "</div>"
-    );
-  }
-
-  function renderNoAccess(who) {
-    render(
-      "<div class='gk-box'>" +
-      "  <div class='gk-h' style='font-size:22px'>Ingen tilgang</div>" +
-      "  <div class='gk-p'>Denne siden er kun tilgjengelig for aktive medlemmer eller ansatte.</div>" +
-      (who ? "<div class='gk-note'>Innlogget som: " + escapeHtml(who) + "</div>" : "") +
-      "  <div class='gk-top-actions'>" +
-      "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Send e-post til " + CONTACT_EMAIL + "</a>" +
-      "  </div>" +
-      "</div>"
-    );
-  }
-
-  function renderMemberApiError(msg) {
-    render(
-      "<div class='gk-box'>" +
-      "  <div class='gk-h' style='font-size:22px'>Kunne ikke verifisere medlemskap</div>" +
-      "  <div class='gk-p'>Medlemslisten kunne ikke lastes akkurat nå. Prøv igjen om litt.</div>" +
-      (msg ? "<div class='gk-note'>" + escapeHtml(msg) + "</div>" : "") +
-      "  <div class='gk-top-actions'>" +
-      "    <a class='gk-btn' href='mailto:" + CONTACT_EMAIL + "'>Kontakt oss</a>" +
-      "  </div>" +
-      "</div>"
-    );
-  }
-
-  /* ------------------------------------------------ */
-  /* HELPERS */
-  /* ------------------------------------------------ */
-
-  function normalizeText(str) {
-    return String(str || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function decodeHtml(str) {
-    var el = document.createElement("textarea");
-    el.innerHTML = String(str || "");
-    return el.value;
-  }
-
-  function fetchSameOrigin(url) {
-    return fetch(url, {
-      method: "GET",
-      credentials: "same-origin",
-      cache: "no-store"
-    });
-  }
-
-  function isLoggedIn() {
-    return fetchSameOrigin("/customer/index").then(function (r) {
-      var u = String(r.url || "");
-      if (u.indexOf("/customer/login") !== -1) return false;
-      if (!r.ok) return false;
-
-      return r.text().then(function (html) {
-        var low = String(html || "").toLowerCase();
-        if (low.indexOf("name=\"password\"") !== -1) return false;
-        return true;
-      });
-    }).catch(function () {
-      return false;
-    });
-  }
-
-  function getLoggedInIdentity() {
-    var paths = [
-      "/customer/details",
-      "/customer/account",
-      "/customer/index",
-      "/customer/orders"
-    ];
-
-    var i = 0;
-
-    function next() {
-      if (i >= paths.length) {
-        return Promise.resolve({ name: "", email: "" });
-      }
-
-      var path = paths[i++];
-
-      return fetchSameOrigin(path)
-        .then(function (r) { return r.text(); })
-        .then(function (html) {
-          var name = "";
-
-          var mClass = html.match(/<div class="customer-nav-name">([\s\S]*?)<\/div>/i);
-          if (mClass && mClass[1]) {
-            name = decodeHtml(mClass[1]);
-          }
-
-          if (!name) {
-            var mAlt = html.match(/alt="([^"]+)"/i);
-            if (mAlt && mAlt[1]) {
-              name = decodeHtml(mAlt[1]);
-            }
-          }
-
-          name = String(name || "").trim();
-
-          if (name) {
-            console.log("[CLUBGATE] identity found on", path, { name: name, email: "" });
-            return { name: name, email: "" };
-          }
-
-          return next();
-        })
-        .catch(function () {
-          return next();
-        });
-    }
-
-    return next();
-  }
-
-  function fetchMemberList() {
-    var CACHE_KEY = "gk_club_members_v3";
-    var CACHE_TTL_MS = 5 * 60 * 1000;
-
-    try {
-      var raw = localStorage.getItem(CACHE_KEY);
-      if (raw) {
-        var cached = JSON.parse(raw);
-        if (
-          cached &&
-          typeof cached.ts === "number" &&
-          Array.isArray(cached.data) &&
-          (Date.now() - cached.ts) < CACHE_TTL_MS
-        ) {
-          console.log("[CLUBGATE] member list from cache:", cached.data.length);
-          return Promise.resolve(cached.data);
-        }
-      }
-    } catch (e) {}
-
-    return fetch(MEMBER_API, { cache: "no-store" })
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        var list = Array.isArray(data) ? data : [];
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({
-            ts: Date.now(),
-            data: list
-          }));
-        } catch (e) {}
-        console.log("[CLUBGATE] member list from API:", list.length);
-        return list;
-      });
-  }
-
-  function userHasAccess(identity, members) {
-    if (!identity || !members || !members.length) return false;
-
-    var email = String(identity.email || "").trim().toLowerCase();
-    var nameNorm = normalizeText(identity.name || "");
-
-    if (!email && !nameNorm) return false;
-
-    var allowedMap = {};
-    for (var i = 0; i < ALLOWED_GROUPS.length; i++) {
-      allowedMap[String(ALLOWED_GROUPS[i] || "").trim().toLowerCase()] = true;
-    }
-
-    for (var j = 0; j < members.length; j++) {
-      var m = members[j];
-      if (!m || !m.active) continue;
-
-      var memberEmail = String(m.email || "").trim().toLowerCase();
-      var memberNameNorm = normalizeText(m.name || "");
-
-      var sameUser = false;
-      if (email && memberEmail && email === memberEmail) sameUser = true;
-      if (!sameUser && nameNorm && memberNameNorm && nameNorm === memberNameNorm) sameUser = true;
-
-      if (!sameUser) continue;
-
-      var groups = Array.isArray(m.groups) ? m.groups : [];
-      for (var g = 0; g < groups.length; g++) {
-        var groupName = String(groups[g] || "").trim().toLowerCase();
-        if (allowedMap[groupName]) return true;
-      }
-    }
-
-    return false;
-  }
-
-  /* ------------------------------------------------ */
-  /* CART */
-  /* ------------------------------------------------ */
-
-  function postAddForm(bodyStr) {
-    return fetch("/cart/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      body: bodyStr,
-      credentials: "same-origin"
-    }).then(function (r) {
-      return r.text();
-    });
-  }
-
-  function addVariantToCart(productId, variantId, cb) {
-    var body =
-      "product_id=" + encodeURIComponent(String(productId)) +
-      "&variant=" + encodeURIComponent(String(variantId)) +
-      "&qty=1&quantity=1" +
-      "&eventId=" + encodeURIComponent(String(EVENT_ID)) +
-      "&page=product";
-
-    postAddForm(body)
-      .then(function () { cb(true); })
-      .catch(function () { cb(false); });
-  }
-
-  function addProductToCart(productId, qty, cb) {
-    if (!qty || qty <= 0) {
-      cb(true);
-      return;
-    }
-
-    var body =
-      "product_id=" + encodeURIComponent(String(productId)) +
-      "&qty=" + encodeURIComponent(String(qty)) +
-      "&eventId=" + encodeURIComponent(String(EVENT_ID)) +
-      "&page=product";
-
-    postAddForm(body)
-      .then(function () { cb(true); })
-      .catch(function () { cb(false); });
-  }
-
-  /* ------------------------------------------------ */
-  /* DATE HELPERS */
-  /* ------------------------------------------------ */
-
-  function nowDateOnly() {
-    var n = new Date();
-    n.setHours(0, 0, 0, 0);
-    return n;
-  }
-
-  function nowLocal() {
-    return new Date();
-  }
-
-  function parseDateFromVal(val) {
-    var s = String(val || "");
-    var m = s.match(/(\d{1,2})\.(\d{1,2})/);
-    if (!m) return null;
-
-    var dd = parseInt(m[1], 10);
-    var mm = parseInt(m[2], 10);
-    if (!dd || !mm) return null;
-
-    var y = (new Date()).getFullYear();
-    var d = new Date(y, mm - 1, dd);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-
-  function fmtISO(d) {
-    var y = d.getFullYear();
-    var m = ("0" + (d.getMonth() + 1)).slice(-2);
-    var day = ("0" + d.getDate()).slice(-2);
-    return y + "-" + m + "-" + day;
-  }
-
-  function sortByDate(a, b) {
-    return a.dateObj.getTime() - b.dateObj.getTime();
-  }
-
-  function buildCutoffDate(dateObj) {
-    var cutoff = new Date(dateObj.getTime());
-    cutoff.setHours(START_HOUR, START_MINUTE, 0, 0);
-    cutoff.setMinutes(cutoff.getMinutes() - CUTOFF_MINUTES_BEFORE_START);
-    return cutoff;
-  }
-
-  function isSignupOpenForDate(dateObj) {
-    var now = nowLocal();
-    var cutoff = buildCutoffDate(dateObj);
-    return now.getTime() < cutoff.getTime();
-  }
-
-  /* ------------------------------------------------ */
-  /* SETS */
-  /* ------------------------------------------------ */
-
-  var setsQty = 0;
-
-  function getInt(key, def) {
-    try {
-      var v = parseInt(localStorage.getItem(key), 10);
-      if (isNaN(v)) return def;
-      return v;
-    } catch (e) {
-      return def;
-    }
-  }
-
-  function saveSets() {
-    try {
-      localStorage.setItem("gk_ldk_sets_qty_v1", String(setsQty));
-    } catch (e) {}
-  }
-
-  /* ------------------------------------------------ */
-  /* RENDER PORTAL */
-  /* ------------------------------------------------ */
-
-  function renderAllowedPortal(list) {
-    var html =
-      "<div class='gk-box'>" +
-
-      "  <div class='gk-topcard'>" +
-      "    <div class='gk-topgrid'>" +
-
-      "      <div class='gk-logo-wrap'>" +
-      "        <img class='gk-logo' src='" + CLUB_LOGO + "' alt='Lyngdal Dartklubb logo'>" +
-      "      </div>" +
-
-      "      <div class='gk-toptext'>" +
-      "        <div class='gk-h'>" + escapeHtml(CLUB_TITLE) + "</div>" +
-      "        <div class='gk-p'>" + escapeHtml(CLUB_TIME) + "</div>" +
-      "        <div class='gk-meta'>" +
-      "          <div class='gk-chip price'>" + escapeHtml(CLUB_PRICE) + "</div>" +
-      "          <div class='gk-chip'>Tilgang verifisert</div>" +
-      "        </div>" +
-      "        <div class='gk-p'>" + escapeHtml(CLUB_INFO) + "</div>" +
-      "        <div class='gk-top-actions'>" +
-      "          <a class='gk-btn ok' href='" + CART_URL + "'>Gå til handlekurv</a>" +
-      "        </div>" +
-      "      </div>" +
-
-      "    </div>" +
-      "  </div>" +
-
-      "  <div class='gk-row'>" +
-      "    <div class='gk-sets'>" +
-      "      <div class='gk-sets-text'>" +
-      "        <div class='gk-sets-title'>Leie pilsett</div>" +
-      "        <div class='gk-sets-sub'>Valgfritt tillegg. Pilsett legges i handlekurven med egen knapp og er ikke knyttet til klubbkveld-påmelding.</div>" +
-      "      </div>" +
-      "      <div class='gk-sets-ctrl'>" +
-      "        <button type='button' class='gk-sets-btn' id='gkSetsMinus' aria-label='Minus'>−</button>" +
-      "        <div class='gk-sets-val' id='gkSetsVal'>0</div>" +
-      "        <button type='button' class='gk-sets-btn' id='gkSetsPlus' aria-label='Pluss'>+</button>" +
-      "      </div>" +
-      "      <button type='button' class='gk-btn ok gk-sets-add' id='gkSetsAdd'>Velg antall pilsett</button>" +
-      "    </div>" +
-      "  </div>" +
-
-      "  <div class='gk-row'>" +
-      "    <div class='gk-section-head'>" +
-      "      <div class='gk-section-title'>Velg torsdag</div>" +
-      "      <div class='gk-note'>Kun datoer med ledige plasser vises. Påmelding stenger kl. 18:30 samme dag.</div>" +
-      "    </div>" +
-      "    <div class='gk-list' id='gkLdkList'></div>" +
-      "  </div>" +
-
-      "</div>";
-
-    render(html);
-
-    setsQty = getInt("gk_ldk_sets_qty_v1", 0);
-    if (setsQty < 0) setsQty = 0;
-    if (setsQty > 8) setsQty = 8;
-
-    var valEl = document.getElementById("gkSetsVal");
-    var mBtn = document.getElementById("gkSetsMinus");
-    var pBtn = document.getElementById("gkSetsPlus");
-    var addSetsBtn = document.getElementById("gkSetsAdd");
-
-    function updateSets() {
-      if (valEl) valEl.textContent = String(setsQty);
-
-      if (addSetsBtn) {
-        if (setsQty > 0) {
-          addSetsBtn.disabled = false;
-          addSetsBtn.textContent = "Legg " + setsQty + " pilsett i handlekurv";
-        } else {
-          addSetsBtn.disabled = true;
-          addSetsBtn.textContent = "Velg antall pilsett";
-        }
-      }
-
-      saveSets();
-    }
-    updateSets();
-
-    if (mBtn) {
-      mBtn.onclick = function () {
-        if (setsQty <= 0) return;
-        setsQty -= 1;
-        updateSets();
-      };
-    }
-
-    if (pBtn) {
-      pBtn.onclick = function () {
-        if (setsQty >= 8) return;
-        setsQty += 1;
-        updateSets();
-      };
-    }
-
-    if (addSetsBtn) {
-      addSetsBtn.onclick = function () {
-        if (!setsQty || setsQty <= 0) return;
-
-        addSetsBtn.disabled = true;
-        addSetsBtn.textContent = "Legger til…";
-
-        addProductToCart(PRODUCT_SETS, setsQty, function (okSets) {
-          if (okSets) {
-            addSetsBtn.textContent = setsQty + " pilsett lagt i handlekurv ✓";
-            setTimeout(updateSets, 1200);
-          } else {
-            addSetsBtn.disabled = false;
-            addSetsBtn.textContent = "Kunne ikke legge til – prøv igjen";
-          }
-        });
-      };
-    }
-
-    var listEl = document.getElementById("gkLdkList");
-    if (!listEl) return;
-
-    if (!list || !list.length) {
-      listEl.innerHTML = "<div class='gk-empty'>Ingen ledige torsdager akkurat nå.</div>";
-      return;
-    }
-
-    listEl.innerHTML = "";
-
-    for (var i = 0; i < list.length; i++) {
-      (function () {
-        var it = list[i];
-        var total = 10;
-        var booked = Math.max(0, total - (it.qty || 0));
-
-        var card = document.createElement("div");
-        card.className = "gk-card";
-
-        var head = document.createElement("div");
-        head.className = "gk-card-head";
-        card.appendChild(head);
-
-        var title = document.createElement("div");
-        title.className = "gk-card-title";
-        title.textContent = it.label;
-        head.appendChild(title);
-
-        var meta = document.createElement("div");
-        meta.className = "gk-card-meta";
-        head.appendChild(meta);
-
-        var chipTime = document.createElement("div");
-        chipTime.className = "gk-mini";
-        chipTime.textContent = "Kl. 19:00–22:00";
-        meta.appendChild(chipTime);
-
-        var chipPrice = document.createElement("div");
-        chipPrice.className = "gk-mini price";
-        chipPrice.textContent = "50 kr";
-        meta.appendChild(chipPrice);
-
-        var chipBooked = document.createElement("div");
-        chipBooked.className = "gk-mini";
-        chipBooked.textContent = "Påmeldte: " + booked + "/" + total;
-        meta.appendChild(chipBooked);
-
-        var cta = document.createElement("div");
-        cta.className = "gk-card-cta";
-        card.appendChild(cta);
-
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "gk-btn ok block";
-        btn.textContent = "Meld på";
-        cta.appendChild(btn);
-
-        btn.onclick = function () {
-          btn.disabled = true;
-          btn.textContent = "Legger til…";
-
-          addVariantToCart(PRODUCT_ID, it.variantId, function (okVar) {
-            if (okVar) {
-              gkStoreBooking({
-                type: "klubb",
-                label: "Klubbkveld – Lyngdal Dartklubb",
-                date: it.dateIso,
-                time: "19:00–22:00",
-                price: 50,
-                sets: 0
-              });
-              btn.textContent = "Lagt i handlekurv ✓";
-            } else {
-              btn.disabled = false;
-              btn.textContent = "Meld på (feil – prøv igjen)";
-            }
-          });
-        };
-
-        listEl.appendChild(card);
-      })();
-    }
-  }
-
-  function buildThursdayList(product) {
-    var out = [];
-    var vars = product && product.variants ? product.variants : [];
-    var today = nowDateOnly();
-
-    for (var i = 0; i < vars.length; i++) {
-      var v = vars[i];
-      var qty = parseInt(v.qty || "0", 10);
-      if (isNaN(qty) || qty <= 0) continue;
-
-      var label = "";
-      if (v.values && v.values.length) {
-        label = String(v.values[0].val || "");
-      }
-      if (!label) continue;
-
-      var d = parseDateFromVal(label);
-      if (!d) continue;
-      if (d.getTime() < today.getTime()) continue;
-      if (!isSignupOpenForDate(d)) continue;
-
-      out.push({
-        label: label,
-        dateObj: d,
-        dateIso: fmtISO(d),
-        variantId: String(v.id || ""),
-        sku: String(v.sku || ""),
-        qty: qty
-      });
-    }
-
-    out.sort(sortByDate);
-    return out;
-  }
-
-  /* ------------------------------------------------ */
-  /* RUN */
-  /* ------------------------------------------------ */
-
-  renderLoading("Sjekker innlogging…");
-
-  isLoggedIn().then(function (okLogin) {
-    if (!okLogin) {
-      renderNeedLogin();
-      return;
-    }
-
-    renderLoading("Leser medlemsstatus…");
-
-    getLoggedInIdentity().then(function (identity) {
-      if (!identity || (!identity.name && !identity.email)) {
-        console.log("[CLUBGATE] no identity found");
-        renderIdentityNotFound();
-        return;
-      }
-
-      console.log("[CLUBGATE] logged in identity:", identity);
-      renderLoading("Verifiserer medlemskap…");
-
-      fetchMemberList().then(function (members) {
-        console.log("[CLUBGATE] member list loaded:", members.length);
-
-        if (!userHasAccess(identity, members)) {
-          renderNoAccess(identity.email || identity.name || "");
-          return;
-        }
-
-        console.log("[CLUBGATE] access granted");
-        renderLoading("Laster torsdager…");
-
-        fetch(API_PRODUCT)
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            var p = data && data.product ? data.product : null;
-            var list = buildThursdayList(p);
-            renderAllowedPortal(list);
-          })
-          .catch(function (e) {
-            console.log("[CLUBGATE] product load error:", e);
-            render(
-              "<div class='gk-box'>" +
-              "  <div class='gk-h' style='font-size:22px'>Kunne ikke laste torsdager</div>" +
-              "  <div class='gk-p'>Sjekk console for detaljer.</div>" +
-              "</div>"
-            );
-          });
-      }).catch(function (e) {
-        console.log("[CLUBGATE] member api error:", e);
-        renderMemberApiError(String(e && e.message ? e.message : e));
-      });
-    });
-  });
-
+ const style=document.createElement("style");style.textContent="#gk-clubgate,#gk-clubgate *{box-sizing:border-box}#gk-clubgate{width:100%}#gk-clubgate button:disabled{opacity:.55;cursor:default}";document.head.appendChild(style);
+ const API="https://eadgdcimcmfyuicizboo.supabase.co/functions/v1/gk-booking-v2";
+ const KEY="sb_publishable_XkYEuhPUH1lLmu8EVJM5Nw_ptPirbYq";
+ const escape=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ root.innerHTML='<div class="gk-box"><div class="gk-topcard"><h1 class="gk-h">Klubbkveld – Lyngdal Dartklubb</h1><p class="gk-p">Torsdager kl. 19:00–22:00. For aktive medlemmer av Dartklubb.</p><div class="gk-meta"><span class="gk-chip price">50 kr per person</span><span class="gk-chip">10 plasser</span><span class="gk-chip">Pilsett: +25 kr</span></div><p class="gk-note">Påmelding stenger kl. 18:30. En bekreftet påmelding sperrer lokalet for andre aktiviteter kl. 19–22. Adgangskoden gjelder kl. 18:45–22:15.</p></div><div class="gk-row" id="gk-club-identity"><form id="gk-club-login"><h2 class="gk-section-title">Bekreft medlemskapet ditt</h2><p class="gk-p">Bruk e-postadressen du er registrert med i dartklubben. Vi sender deg en engangskode.</p><label>E-post<input id="gk-club-email" type="email" autocomplete="email" required style="display:block;width:100%;padding:12px;margin:10px 0;color:#111;background:white;border-radius:8px"></label><button class="gk-btn ok" type="submit">Send engangskode</button></form><form id="gk-club-verify" hidden><label>Engangskode fra e-post<input id="gk-club-code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6,10}" required style="display:block;width:100%;padding:12px;margin:10px 0;color:#111;background:white;border-radius:8px"></label><button class="gk-btn ok" type="submit">Bekreft</button></form></div><p id="gk-club-message" class="gk-note" role="status" aria-live="polite"></p><div class="gk-row" id="gk-club-options" hidden><label><input id="gk-club-rental" type="checkbox"> Leie ett pilsett (+25 kr)</label><p><label><input id="gk-club-terms" type="checkbox"> Jeg godtar <a href="/sider/terms-and-conditions" target="_blank" rel="noopener">bookingvilkårene</a>.</label></p><p class="gk-note">Én plass per medlem. Har du allerede andre varer i handlekurven, fullfør eller tøm den først. Bruk samme e-postadresse i kassen.</p><button id="gk-club-logout" class="gk-btn" type="button">Bytt medlem / logg ut</button></div><div id="gk-club-days" class="gk-list"></div></div>';
+ const $=id=>document.getElementById(id),message=t=>$("gk-club-message").textContent=t;
+ let auth,who=null,busy=false,calendar=[],verifiedEmail="";
+ async function api(path,body){
+  const session=auth?(await auth.auth.getSession()).data.session:null;
+  const res=await fetch(API+path,{method:body?"POST":"GET",headers:{"Content-Type":"application/json",apikey:KEY,...(session?{Authorization:"Bearer "+session.access_token}:{})},body:body?JSON.stringify(body):undefined,cache:"no-store"});
+  const json=await res.json();if(!res.ok||!json.ok)throw Error(json.code||"request_failed");return json;
+ }
+ function render(){
+  $("gk-club-days").innerHTML=calendar.map(day=>'<div class="gk-card"><div class="gk-card-title">'+escape(new Intl.DateTimeFormat("nb-NO",{weekday:"long",day:"numeric",month:"long"}).format(new Date(day.date+"T12:00:00Z")))+'</div><div class="gk-card-meta"><span class="gk-mini">19:00–22:00</span><span class="gk-mini price">50 kr</span><span class="gk-mini">'+escape(day.remaining)+' ledige av 10</span></div><p class="gk-p">'+escape(day.canBook?"Ledig for klubbpåmelding":day.reason==="signup_closed"?"Påmeldingen er stengt":day.reason==="club_full"?"Fullbooket":"Tidspunktet er opptatt eller stengt")+'</p><button class="gk-btn ok" data-book="'+escape(day.date)+'" '+(!who||!day.canBook||busy?'disabled':'')+'>Meld meg på</button></div>').join("");
+  for(const button of root.querySelectorAll("[data-book]"))button.onclick=()=>book(button.dataset.book);
+ }
+ async function refresh(){const data=await api("/club/calendar");calendar=data.days;render();}
+ async function check(){
+  try{who=await api("/club/me");$("gk-club-identity").hidden=true;$("gk-club-options").hidden=false;message("Medlemskap bekreftet: "+who.email);}
+  catch(_){who=null;$("gk-club-identity").hidden=false;$("gk-club-options").hidden=true;}
+  render();
+ }
+ $("gk-club-login").onsubmit=async event=>{
+  event.preventDefault();if(busy)return;busy=true;
+  const button=event.currentTarget.querySelector("button");button.disabled=true;
+  try{verifiedEmail=$("gk-club-email").value.trim().toLowerCase();const result=await api("/club/login",{email:verifiedEmail});message(result.message);$("gk-club-verify").hidden=false;$("gk-club-code").focus();}
+  catch(_){message("Kunne ikke sende innloggingskode. Vent litt før du prøver igjen. Kontakt GolfKongen hvis medlemsadressen mangler.");}
+  finally{busy=false;setTimeout(()=>button.disabled=false,60000);}
+ };
+ $("gk-club-verify").onsubmit=async event=>{
+  event.preventDefault();if(busy||!auth)return;busy=true;
+  try{const {error}=await auth.auth.verifyOtp({email:verifiedEmail,token:$("gk-club-code").value.trim(),type:"email"});if(error)throw error;await check();if(!who)throw Error("not_member");await refresh();}
+  catch(_){message("Koden kunne ikke bekreftes, eller medlemskapet er ikke aktivt. Kontroller e-post og kode.");}
+  finally{busy=false;}
+ };
+ $("gk-club-logout").onclick=async()=>{if(auth)await auth.auth.signOut();who=null;$("gk-club-verify").hidden=true;await check();};
+ async function add(product,variant,sku){
+  const data=new URLSearchParams({product_id:String(product),qty:"1",quantity:"1",eventId:"9847005",page:"product"});if(variant)data.set("variant",String(variant));
+  const result=await fetch("/cart/add",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8","X-Requested-With":"XMLHttpRequest"},body:data,credentials:"same-origin"});
+  if(!result.ok)throw Error("cart_failed");
+  const cart=await result.json();
+  const matches=cart?.items?.filter(line=>String(line?.item?.sku||"")===sku)||[];
+  if(cart.success!==1||matches.length!==1||Number(matches[0].qty)!==1||![Number(product),Number(variant||product)].includes(Number(matches[0].item?.raw_id))||Boolean(Number(matches[0].is_variant))!==Boolean(variant))throw Error("cart_unverified");
+  return cart;
+ }
+ async function book(day){
+  if(busy||!who)return;if(!$("gk-club-terms").checked){message("Godta bookingvilkårene før påmelding.");return;}
+  busy=true;render();
+  const rental=$("gk-club-rental").checked?1:0,cache="gk2-club-hold-"+day+"-"+who.email;
+  try{
+   // Keep this checkout isolated: webhook only accepts club seat plus optional pilsett.
+   const cart=await fetch("/cart/index",{credentials:"same-origin",cache:"no-store"}).then(r=>r.text());
+   if(/name=["'](?:quantity|qty)\[|name=["']quantity["']|class=["'][^"']*cart-item/i.test(cart))throw Error("cart_not_empty");
+   let saved=null;try{saved=JSON.parse(sessionStorage.getItem(cache)||"null")}catch(_){}
+   let key=saved&&Date.parse(saved.expires)>Date.now()?saved.key:crypto.randomUUID();
+   sessionStorage.setItem(cache,JSON.stringify({key,expires:new Date(Date.now()+10*60000).toISOString()}));
+   message("Reserverer plassen din …");
+   const hold=await api("/club/hold",{date:day,idempotencyKey:key,rentalSets:rental,acceptedTerms:true});
+   sessionStorage.setItem(cache,JSON.stringify({key,expires:hold.expires}));
+   let verifiedCart=await add(hold.productId,hold.variantId,hold.sku);
+   if(rental)verifiedCart=await add(1318,null,"1318");
+   if(verifiedCart.items.length!==1+rental)throw Error("mixed_cart");
+   sessionStorage.setItem("gk_last_booking_payload_v1",JSON.stringify({type:"klubb",label:"Klubbkveld – Lyngdal Dartklubb",date:day,time:"19:00–22:00",price:50+rental*25,sets:rental}));
+   sessionStorage.setItem("gk_success_target","booking");
+   message("Plassen er reservert. Åpner handlekurven …");location.assign("/cart/index");
+  }catch(error){
+   message(error.message==="cart_not_empty"?"Handlekurven inneholder andre varer. Fullfør eller tøm den før klubbpåmelding.":"Påmeldingen kunne ikke fullføres. Kontroller handlekurven før du prøver igjen. En ubetalt reservasjon frigjøres automatisk.");
+  }finally{busy=false;await refresh().catch(()=>{});}
+ }
+ try{
+  const {createClient}=await import("https://esm.sh/@supabase/supabase-js@2.58.0");
+  auth=createClient("https://eadgdcimcmfyuicizboo.supabase.co",KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+  await check();await refresh();
+ }catch(_){message("Klubbbookingen kunne ikke lastes. Prøv å oppdatere siden, eller kontakt GolfKongen.");}
 })();
